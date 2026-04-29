@@ -1,4 +1,5 @@
-import { validateSignature } from "@line/bot-sdk";
+import { handleMessage } from "@/features/webhook/handlers/message.handler";
+import { validateSignature, webhook } from "@line/bot-sdk";
 import { NextResponse } from "next/server";
 
 export async function POST(request: Request) {
@@ -16,7 +17,12 @@ export async function POST(request: Request) {
     }
 
     const events = JSON.parse(body).events;
-    console.log("Received events:", JSON.stringify(events, null, 2));
+
+    for (const event of events) {
+        if (event.type === "message") {
+            await handleMessage(event as webhook.MessageEvent)
+        }
+    }
 
     return NextResponse.json({message: "OK"}, {status: 200});
 }
