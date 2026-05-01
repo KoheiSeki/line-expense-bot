@@ -42,9 +42,7 @@ LINEグループを活用した割り勘アプリ。既存のLINEグループを
 
 ### 精算
 ```
-1. グループで「精算」と入力
-2. 未精算の全expensesのsettled_atを現在時刻で更新
-3. 「精算が完了しました！」とグループに通知
+※ 精算フローは別途設計を検討中
 ```
 
 ---
@@ -54,7 +52,7 @@ LINEグループを活用した割り勘アプリ。既存のLINEグループを
 ```
 LINEアプリ
   │
-  ├─ メッセージ送信（「登録」「表示」「精算」）
+  ├─ メッセージ送信（「登録」「表示」）
   │       ↓
   │   LINE Platform
   │       ↓ Webhook (POST)
@@ -68,6 +66,7 @@ LINEアプリ
           ↓ liff.getProfile() で認証
           ↓
       Next.js API Route (/api/expenses)
+          ↓ apiHandlerでラップ（共通エラーハンドリング）
           ↓
       Supabase (Postgres)
 ```
@@ -78,11 +77,12 @@ LINEアプリ
 
 | レイヤー | 技術 | 備考 |
 |---|---|---|
-| フロントエンド (LIFF) | Next.js 15 (App Router) | WebhookAPIと同一プロジェクトで完結 |
+| フロントエンド (LIFF) | Next.js 16 (App Router) | WebhookAPIと同一プロジェクトで完結 |
 | UIコンポーネント | Tailwind CSS + Shadcn UI | モダン・軽量 |
 | Webhookサーバー | Next.js API Route | 別サーバー不要 |
 | LINE連携（Bot） | @line/bot-sdk | 公式SDK |
-| LINE連携（LIFF） | LIFF SDK | 公式SDK |
+| LINE連携（LIFF） | @line/liff | 公式SDK |
+| HTTPクライアント | axios | インターセプターによるエラーハンドリング共通化 |
 | DB | Supabase (Postgres) | 無料枠が大きい |
 | ORM | Drizzle ORM | 型安全・軽量 |
 | 言語 | TypeScript (strict) | — |
@@ -97,28 +97,29 @@ LINEアプリ
 - usersテーブル：**不要**（LINE IDをそのまま利用）
 - groupsテーブル：**不要**（LINEグループIDをそのまま利用）
 - balancesテーブル：**不要**（2テーブルから都度集計）
+- `expense_participants` の主キー：`(expense_id, line_user_id)` の複合主キー（同一支出に同一ユーザーの重複登録をDB制約で防止）
 
 ### テーブル定義
 
 ```sql
 -- 支出
 CREATE TABLE expenses (
-  id              SERIAL PRIMARY KEY,
+  expense_id      SERIAL PRIMARY KEY,
   line_group_id   VARCHAR(50)    NOT NULL,  -- LINEグループID
   payer_user_id   VARCHAR(50)    NOT NULL,  -- LINE UserID（立替払い者）
-  title           VARCHAR(100)   NOT NULL,  -- 支出タイトル
+  title           VARCHAR(255)   NOT NULL,  -- 支出タイトル
   amount          DECIMAL(10,2)  NOT NULL,  -- 支払い金額
   paid_at         DATE           NOT NULL,  -- 支出日
-  settled_at      TIMESTAMPTZ,              -- NULL = 未精算
   created_at      TIMESTAMPTZ    DEFAULT NOW()
 );
 
 -- 支出参加者
 CREATE TABLE expense_participants (
-  id              SERIAL PRIMARY KEY,
-  expense_id      INTEGER REFERENCES expenses(id),
+  expense_id      INTEGER        REFERENCES expenses(expense_id) NOT NULL,
   line_user_id    VARCHAR(50)    NOT NULL,  -- LINE UserID（参加者）
-  share_amount    DECIMAL(10,2)  NOT NULL   -- 負担金額
+  share_amount    DECIMAL(10,2)  NOT NULL,  -- 負担金額
+  created_at      TIMESTAMPTZ    DEFAULT NOW(),
+  PRIMARY KEY (expense_id, line_user_id)    -- 複合主キー
 );
 ```
 
@@ -132,19 +133,55 @@ SELECT
 FROM (
   SELECT payer_user_id AS user_id, amount AS paid, 0 AS owed
   FROM expenses
-  WHERE line_group_id = $1 AND settled_at IS NULL
+  WHERE line_group_id = $1
 
   UNION ALL
 
   SELECT ep.line_user_id AS user_id, 0 AS paid, ep.share_amount AS owed
   FROM expense_participants ep
-  JOIN expenses e ON ep.expense_id = e.id
-  WHERE e.line_group_id = $1 AND e.settled_at IS NULL
+  JOIN expenses e ON ep.expense_id = e.expense_id
+  WHERE e.line_group_id = $1
 ) t
 GROUP BY user_id
 ```
 
 この純残高を取得後、アプリ側で**貪欲法**を適用して精算ペアを最小化する。
+
+---
+
+## エラーハンドリング方針
+
+### クライアント側（axios）
+
+`axios.create` でベースURLとヘッダーを共通化し、レスポンスインターセプターでエラーを一元処理する。
+
+```
+src/lib/api/client.ts   # axiosインスタンス生成・インターセプター設定
+```
+
+各クライアントサービスは `apiClient.post/get/patch/delete` を使用し、個別のエラーハンドリングは不要。
+
+### サーバー側（apiHandler）
+
+Route Handlerを `apiHandler` でラップし、try/catch の重複記述を排除する。
+
+```
+src/lib/api/errors.ts       # AppErrorクラス定義
+src/lib/api/api-handler.ts  # Route Handlerラッパー
+```
+
+- `AppError` を `throw` すると指定ステータスでJSONレスポンスを返す
+- 予期しないエラーは500で統一し、サーバーログに出力する
+- 各Route Handlerはビジネスロジックのみに集中できる
+
+```typescript
+// 使用例
+export const POST = apiHandler(async (req) => {
+  const body = await req.json();
+  await createExpense(body);
+  return NextResponse.json({ message: "OK" }, { status: 201 });
+});
+```
 
 ---
 
@@ -156,53 +193,55 @@ src/
 │   ├── api/
 │   │   ├── line/
 │   │   │   └── webhook/
-│   │   │       └── route.ts          # LINE Webhookエンドポイント
+│   │   │       └── route.ts              # LINE Webhookエンドポイント
 │   │   └── expenses/
-│   │       └── route.ts              # 経費登録API（LIFF → DB）
+│   │       └── route.ts                  # 経費登録API（apiHandlerでラップ）
 │   ├── liff/
+│   │   ├── layout.tsx                    # LiffProvider適用レイアウト
 │   │   └── register/
-│   │       └── page.tsx              # LIFF画面（金額入力フォーム）
+│   │       └── page.tsx                  # LIFF画面（金額入力フォーム）
 │   ├── layout.tsx
 │   └── globals.css
 │
 ├── features/
 │   ├── webhook/
 │   │   ├── handlers/
-│   │   │   ├── message.handler.ts    # テキストメッセージの分岐
-│   │   │   ├── register.handler.ts  # 「登録」コマンド処理
-│   │   │   ├── display.handler.ts   # 「表示」コマンド処理
-│   │   │   └── settle.handler.ts    # 「精算」コマンド処理
+│   │   │   ├── message.handler.ts        # テキストメッセージの分岐
+│   │   │   ├── register.handler.ts       # 「登録」コマンド処理
+│   │   │   └── display.handler.ts        # 「表示」コマンド処理
 │   │   └── flex-messages/
-│   │       └── balance.flex.ts      # 支払い状況のFlex Message
+│   │       └── balance.flex.ts           # 支払い状況のFlex Message
 │   │
 │   └── expenses/
 │       ├── components/
-│       │   ├── expense-form.tsx      # 金額入力フォーム
-│       │   └── participant-select.tsx
+│       │   └── expense-form.tsx          # 金額入力フォーム（UIのみ）
 │       ├── hooks/
-│       │   └── use-expense-form.ts
+│       │   └── use-expense-form.ts       # フォーム状態管理・submit処理
 │       ├── services/
-│       │   ├── expense.client.service.ts
-│       │   └── expense.server.service.ts
+│       │   ├── expense.client.service.ts # axiosでAPIを呼び出すクライアント層
+│       │   └── expense.server.service.ts # DBを操作するサーバー層
 │       ├── utils/
-│       │   └── settlement.utils.ts   # 貪欲法による精算計算
+│       │   └── settlement.utils.ts       # 貪欲法による精算計算（純粋関数）
 │       └── types/
-│           └── expense.types.ts
+│           └── expense.types.ts          # 経費関連の型定義
 │
 ├── lib/
+│   ├── api/
+│   │   ├── client.ts                     # axiosインスタンス（クライアント用）
+│   │   ├── api-handler.ts                # Route Handlerラッパー（サーバー用）
+│   │   └── errors.ts                     # AppErrorクラス
 │   ├── line/
-│   │   └── client.ts                 # LINE Bot SDK初期化
+│   │   └── client.ts                     # LINE Bot SDKクライアント初期化
 │   └── db/
-│       ├── schema.ts                 # Drizzle スキーマ定義
-│       ├── client.ts                 # DB接続クライアント
+│       ├── schema.ts                     # Drizzle スキーマ定義
+│       ├── client.ts                     # DB接続クライアント
 │       └── migrations/
 │
-├── config/
-│   └── env.ts                        # 環境変数バリデーション（zod）
-│
 └── shared/
-    └── components/
-        └── liff-provider.tsx         # LIFF SDK初期化Provider
+    ├── components/
+    │   └── liff-provider.tsx             # LIFF SDK初期化Provider
+    └── types/
+        └── liff-provider.types.ts        # LiffContextValue型
 ```
 
 ---
@@ -223,6 +262,7 @@ NEXT_PUBLIC_LIFF_ID=         # LIFF ID（クライアントから参照するた
 
 # Supabase
 # 取得元: Supabase > Project Settings > Database > Connection string (Transaction)
+# Transaction modeのポートは6543
 DATABASE_URL=
 ```
 
@@ -256,7 +296,7 @@ DATABASE_URL=
    └─ LINEログインチャンネル作成 → LIFFアプリ追加 → LIFF ID 取得
 
 ② Supabase
-   └─ プロジェクト作成 → DATABASE_URL 取得
+   └─ プロジェクト作成 → DATABASE_URL 取得（Transaction mode）
 
 ③ Vercel
    └─ アカウント作成
@@ -265,7 +305,7 @@ DATABASE_URL=
 ### 2. プロジェクト作成
 
 ```bash
-npx create-next-app@latest walli-pay-line \
+npx create-next-app@latest line-expense-bot \
   --typescript \
   --tailwind \
   --eslint \
@@ -273,14 +313,13 @@ npx create-next-app@latest walli-pay-line \
   --src-dir \
   --import-alias "@/*"
 
-cd walli-pay-line
+cd line-expense-bot
 
 # 依存パッケージ
-npm install @line/bot-sdk @line/liff drizzle-orm postgres
-npm install @supabase/supabase-js zod
+npm install @line/bot-sdk @line/liff drizzle-orm postgres axios zod
 
-# 開発用
-npm install -D drizzle-kit
+# 開発用（dotenvはdrizzle-kitがenv.localを読むために必要）
+npm install -D drizzle-kit dotenv
 
 # Shadcn UI
 npx shadcn@latest init
@@ -316,15 +355,35 @@ npx vercel deploy
 ## 開発の進め方（推奨順序）
 
 ```
-Step 1: DB スキーマ定義 → マイグレーション実行
-Step 2: Webhookエンドポイント作成 → ngrokでローカルテスト
-Step 3: 「登録」「表示」「精算」コマンドの実装
-Step 4: LIFF画面（金額入力フォーム）実装
-Step 5: 貪欲法による精算計算ロジック実装
-Step 6: Flex Messageで支払い状況を表示
-Step 7: Vercelデプロイ → LINE Webhook本番設定
+Step 1: DBスキーマ定義 → マイグレーション実行          ✅ 完了
+Step 2: Webhookエンドポイント作成 → ngrok疎通確認       ✅ 完了
+Step 3: 「登録」コマンド実装                            ✅ 完了
+
+Step A: lib/api/ 整備
+        - errors.ts（AppError）
+        - api-handler.ts（Route Handlerラッパー）
+        - client.ts（axiosインスタンス）
+
+Step B: 経費登録フロー（E2E）
+        B-1. expense.client.service.ts
+        B-2. use-expense-form.ts
+        B-3. expense-form.tsx 更新（hooksを使う形に）
+        B-4. /app/liff/register/page.tsx
+        B-5. expense.server.service.ts
+        B-6. /api/expenses/route.ts（httpHandlerでラップ）
+
+Step C: 貪欲法による精算計算ロジック（純粋関数）
+        - settlement.utils.ts
+
+Step D: 「表示」コマンド実装
+        - display.handler.ts
+        - balance.flex.ts（Flex Message）
+        - message.handler.ts に「表示」分岐を追加
+
+Step E: Vercelデプロイ → LINE Webhook・LIFF本番URL設定
 ```
 
 > **ローカルテストについて**
 > LINE WebhookはHTTPSが必須のため、ローカル開発時は `ngrok` を使用する。
 > `npx ngrok http 3000` でトンネルを起動し、発行されたURLをWebhook URLに一時設定する。
+> ngrok無料プランはセッションごとにURLが変わるため、再起動の都度LINE DevelopersのWebhook URLを更新する必要がある。
