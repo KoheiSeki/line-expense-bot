@@ -19,7 +19,7 @@ export const createExpense = async (request: CreateExpenseRequest) => {
 		const [expense] = await tx
 			.insert(expenses)
 			.values({
-				lineGroupId: request.groupId,
+				lineGroupId: request.lineGroupId,
 				payerUserId: request.payerUserId,
 				title: request.title,
 				amount: request.amount,

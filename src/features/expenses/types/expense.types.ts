@@ -11,7 +11,7 @@ export type Member = {
 /** 支払い登録リクエスト */
 export type CreateExpenseRequest = {
 	/** ライングループID */
-	groupId: string;
+	lineGroupId: string;
 	/** 支払い者ユーザーID */
 	payerUserId: string;
 	/** タイトル */

@@ -53,7 +53,7 @@ export const ExpenseForm = ({ groupId, members }: ExpenseFormProps) => {
 				const profile = await liff.getProfile();
 
 				await createExpenseRequest({
-					groupId,
+					lineGroupId: groupId,
 					payerUserId: profile.userId,
 					title,
 					amount,
