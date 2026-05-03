@@ -1,7 +1,7 @@
 import { Input } from "@/components/ui/input";
 import { CARD_INPUT_CLASS } from "@/shared/styles/card-input";
 import type { Member } from "../types/expense.types";
-import { MemberAvatar } from "./member-avatar";
+import { MemberAvatar } from "../../../shared/components/member-avatar";
 
 type ParticipantRowProps = {
 	member: Member;
