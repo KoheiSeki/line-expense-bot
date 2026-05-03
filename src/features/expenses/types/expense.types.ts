@@ -31,3 +31,17 @@ export type ExpenseParticipant = {
 	/** 負担金額 */
 	shareAmount: string;
 };
+
+/** 支出フォーム */
+export type ExpenseForm = {
+	/** 支払い者ユーザーID */
+	payerUserId: string;
+	/** 支出タイトル */
+	title: string;
+	/** 金額 */
+	amount: string;
+	/** 支払い日 */
+	paidAt: string;
+	/** 支出参加者 */
+	expenseParticipants: ExpenseParticipant[];
+};
