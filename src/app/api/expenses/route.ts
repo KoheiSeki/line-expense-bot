@@ -5,6 +5,8 @@ import { NextRequest, NextResponse } from "next/server";
 
 /**
  * 支出を登録するAPI
+ * @param req リクエスト
+ * @returns レスポンス
  */
 export const POST = apiHandler(
 	async (req: NextRequest): Promise<NextResponse> => {
