@@ -1,9 +1,3 @@
-/** 表示コマンドのレスポンス */
-export type DisplayCommandRes = {
-	/** 表示コマンドの結果 */
-	results: SettlementResult[];
-};
-
 /** 表示コマンドの結果 */
 export type SettlementResult = {
 	/** 送金者ユーザーID */
