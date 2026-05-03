@@ -7,5 +7,10 @@ export type RegisterGroupMemberReq = {
 	/** 表示名 */
 	displayName: string;
 	/** プロフィール画像URL */
-	pictureUrl: string;
+	pictureUrl: string | undefined;
+};
+
+/** グループ参加フォーム */
+export type JoinForm = {
+	displayName: string;
 };

@@ -60,7 +60,7 @@ export const groupMembers = pgTable(
 		/** 表示名 */
 		displayName: varchar("display_name", { length: 100 }).notNull(),
 		/** プロフィール画像URL */
-		pictureUrl: varchar("picture_url", { length: 500 }).notNull(),
+		pictureUrl: varchar("picture_url", { length: 500 }),
 		/** 参加日時 */
 		joinedAt: timestamp("joined_at", { withTimezone: true })
 			.defaultNow()

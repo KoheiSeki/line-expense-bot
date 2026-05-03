@@ -3,80 +3,62 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ApiError } from "@/lib/api/error";
 import { useLiff } from "@/shared/components/liff-provider";
-import Image from "next/image";
-import { useState, useTransition } from "react";
-import { joinGroup } from "../service/group-members.client.service";
 import { FormError } from "@/shared/components/form-error";
+import type { Profile } from "@liff/get-profile";
+import type liff from "@line/liff";
+import { useJoinForm } from "../hooks/use-join-form";
+import { LABEL_CLASS } from "@/shared/styles/label";
+import { MemberAvatar } from "@/shared/components/member-avatar";
 
 type JoinFormProps = {
 	groupId: string;
 };
 
+type JoinFormInnerProps = JoinFormProps & {
+	profile: Profile;
+	liff: typeof liff;
+};
+
+/** ローディング・LIFF 初期化待ちを担当するラッパー */
 export const JoinForm = ({ groupId }: JoinFormProps) => {
 	const { liff, isReady, profile } = useLiff();
-	const [isPending, startTransition] = useTransition();
-	/** 表示名 */
-	const [displayName, setDisplayName] = useState<string>(
-		profile?.displayName ?? "",
-	);
-	/** プロフィール画像URL */
-	const pictureUrl = profile?.pictureUrl ?? "";
-	/** ラインユーザーID */
-	const lineUserId = profile?.userId ?? "";
-	/** エラーメッセージ */
-	const [error, setError] = useState<string | null>(null);
 
-	/** 参加登録を行う関数 */
-	const handleSubmit = (e: React.FormEvent) => {
-		e.preventDefault();
-		if (!liff) return;
-
-		startTransition(async () => {
-			setError(null);
-			try {
-				await joinGroup({
-					lineGroupId: groupId,
-					lineUserId,
-					displayName,
-					pictureUrl,
-				});
-				liff.closeWindow();
-			} catch (err) {
-				if (err instanceof ApiError) {
-					setError(err.message);
-				} else {
-					setError("予期しないエラーが発生しました");
-				}
-			}
-		});
-	};
-
-	if (!isReady || !profile) {
+	if (!isReady || !profile || !liff) {
 		return <p className="p-6 text-sm text-zinc-500">読み込み中...</p>;
 	}
+
+	return <JoinFormInner groupId={groupId} profile={profile} liff={liff} />;
+};
+
+/** フォーム本体（profile・liff が確定した状態でマウント） */
+const JoinFormInner = ({ groupId, profile, liff }: JoinFormInnerProps) => {
+	const {
+		isPending,
+		displayName,
+		setDisplayName,
+		pictureUrl,
+		lineUserId,
+		error,
+		handleSubmit,
+	} = useJoinForm({ groupId, profile, liff });
 
 	return (
 		<form onSubmit={handleSubmit} className="flex flex-col gap-6 p-6">
 			<FormError error={error} />
 
-			{/* プロフィール画像プレビュー */}
-			{pictureUrl && (
-				<div className="flex justify-center">
-					<Image
-						src={pictureUrl}
-						alt={displayName}
-						width={72}
-						height={72}
-						className="rounded-full"
-					/>
-				</div>
-			)}
+			<div className="flex justify-center">
+				<MemberAvatar
+					pictureUrl={pictureUrl}
+					displayName={displayName}
+					size={72}
+				/>
+			</div>
 
-			{/* 表示名入力 */}
 			<div>
-				<Label htmlFor="displayName">表示名</Label>
+				<Label htmlFor="displayName" className={LABEL_CLASS}>
+					表示名
+				</Label>
 				<Input
 					id="displayName"
 					value={displayName}

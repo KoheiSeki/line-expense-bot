@@ -6,7 +6,7 @@ import type liff from "@line/liff";
 import { useState, useTransition } from "react";
 import { createExpenseRequest } from "../service/expense.client.service";
 import type { ExpenseParticipant } from "../types/expense.types";
-import { validateExpenseForm } from "../utils/expense-form.validation";
+import { validateExpenseForm } from "../utils/expenses.validation";
 import { useParticipantAmounts } from "./use-participant-amounts";
 
 type UseExpenseFormParams = {

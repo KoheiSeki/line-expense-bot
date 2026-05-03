@@ -5,7 +5,7 @@ export type Member = {
 	/** 表示名 */
 	displayName: string;
 	/** プロフィール画像URL */
-	pictureUrl: string;
+	pictureUrl: string | undefined;
 };
 
 /** 支払い登録リクエスト */

@@ -17,7 +17,7 @@ import { CARD_INPUT_CLASS } from "@/shared/styles/card-input";
 import { FormError } from "@/shared/components/form-error";
 import { useExpenseForm } from "../hooks/use-expense-form";
 import type { Member } from "../types/expense.types";
-import { MemberAvatar } from "./member-avatar";
+import { MemberAvatar } from "../../../shared/components/member-avatar";
 import { ParticipantRow } from "./participant-row";
 import { LABEL_CLASS } from "@/shared/styles/label";
 

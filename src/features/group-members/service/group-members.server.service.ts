@@ -49,7 +49,7 @@ export const fetchGroupMembers = async (groupId: string): Promise<Member[]> => {
 			rows.map((row) => ({
 				lineUserId: row.lineUserId,
 				displayName: row.displayName,
-				pictureUrl: row.pictureUrl,
+				pictureUrl: row.pictureUrl ?? undefined,
 			})),
 		);
 
