@@ -17,7 +17,7 @@ export default async function RegisterPage({
 
 	return (
 		<main className="max-w-md mx-auto">
-			<h1 className="text-xl font-bold p-6 pb-0">支出を登録</h1>
+			<h1 className="text-xl font-bold p-6 pb-0">支出登録</h1>
 			<ExpenseForm groupId={groupId} members={members} />
 		</main>
 	);

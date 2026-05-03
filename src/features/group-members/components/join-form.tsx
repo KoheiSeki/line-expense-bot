@@ -8,6 +8,7 @@ import { useLiff } from "@/shared/components/liff-provider";
 import Image from "next/image";
 import { useState, useTransition } from "react";
 import { joinGroup } from "../service/group-members.client.service";
+import { FormError } from "@/shared/components/form-error";
 
 type JoinFormProps = {
 	groupId: string;
@@ -58,7 +59,7 @@ export const JoinForm = ({ groupId }: JoinFormProps) => {
 
 	return (
 		<form onSubmit={handleSubmit} className="flex flex-col gap-6 p-6">
-			{error && <p className="text-red-500 text-sm">{error}</p>}
+			<FormError error={error} />
 
 			{/* プロフィール画像プレビュー */}
 			{pictureUrl && (
