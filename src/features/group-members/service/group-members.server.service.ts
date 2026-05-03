@@ -2,6 +2,38 @@ import { Member } from "@/features/expenses/types/expense.types";
 import { db } from "@/lib/db/client";
 import { groupMembers } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
+import { RegisterGroupMemberReq } from "../types/group-members.types";
+import { createGroupMembersSchema } from "../schemas/group-members.schema";
+import { ApiError } from "@/lib/api/error";
+
+/**
+ * グループメンバーを登録する関数
+ * @param request グループメンバー登録リクエスト
+ */
+export const registerGroupMember = async (
+	request: RegisterGroupMemberReq,
+): Promise<void> => {
+	const result = createGroupMembersSchema.safeParse(request);
+	if (!result.success) {
+		throw new ApiError(400, result.error.issues[0].message);
+	}
+
+	await db
+		.insert(groupMembers)
+		.values({
+			lineGroupId: request.lineGroupId,
+			lineUserId: request.lineUserId,
+			displayName: request.displayName,
+			pictureUrl: request.pictureUrl,
+		})
+		.onConflictDoUpdate({
+			target: [groupMembers.lineGroupId, groupMembers.lineUserId],
+			set: {
+				displayName: request.displayName,
+				pictureUrl: request.pictureUrl,
+			},
+		});
+};
 
 /**
  * グループメンバーを取得する関数

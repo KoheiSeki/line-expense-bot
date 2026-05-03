@@ -9,7 +9,7 @@ export type Member = {
 };
 
 /** 支払い登録リクエスト */
-export type CreateExpenseRequest = {
+export type CreateExpenseReq = {
 	/** ライングループID */
 	lineGroupId: string;
 	/** 支払い者ユーザーID */

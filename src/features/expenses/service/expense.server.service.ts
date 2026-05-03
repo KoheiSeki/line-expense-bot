@@ -1,5 +1,5 @@
 import { db } from "@/lib/db/client";
-import { CreateExpenseRequest } from "../types/expense.types";
+import { CreateExpenseReq } from "../types/expense.types";
 import { expenseParticipants, expenses } from "@/lib/db/schema";
 import { ApiError } from "@/lib/api/error";
 import { createExpenseSchema } from "../schemas/expense.schema";
@@ -8,7 +8,7 @@ import { createExpenseSchema } from "../schemas/expense.schema";
  * 支出を登録する関数
  * @param request 支出登録リクエスト
  */
-export const createExpense = async (request: CreateExpenseRequest) => {
+export const createExpense = async (request: CreateExpenseReq) => {
 	const result = createExpenseSchema.safeParse(request);
 	if (!result.success) {
 		throw new ApiError(400, result.error.issues[0].message);

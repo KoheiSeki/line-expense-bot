@@ -15,6 +15,7 @@ export async function handleMessage(event: webhook.MessageEvent) {
 	switch (text) {
 		case "参加":
 			await handleJoin(replyToken, groupId);
+			break;
 		case "登録":
 			await handleRegister(replyToken, groupId);
 			break;

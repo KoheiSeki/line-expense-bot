@@ -7,7 +7,7 @@ import { messagingApi } from "@line/bot-sdk";
  * @param groupId グループID
  */
 export async function handleRegister(replyToken: string, groupId: string) {
-	const liffUrl = `https://liff.line.me/${process.env.NEXT_PUBLIC_LIFF_ID}?/liff/register?groupId=${groupId}`;
+	const liffUrl = `https://liff.line.me/${process.env.NEXT_PUBLIC_LIFF_ID}/liff/register?groupId=${groupId}`;
 
 	await lineClient.replyMessage({
 		replyToken,
