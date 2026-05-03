@@ -7,20 +7,19 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-import { ApiError } from "@/lib/api/error";
 import { useLiff } from "@/shared/components/liff-provider";
 import type { Profile } from "@liff/get-profile";
 import type liff from "@line/liff";
-import Image from "next/image";
-import { useState, useTransition } from "react";
-import { createExpenseRequest } from "../service/expense.client.service";
-import { ExpenseParticipant, Member } from "../types/expense.types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { validateExpenseForm } from "../utils/expense-form.validation";
 import { CARD_INPUT_CLASS } from "@/shared/styles/card-input";
 import { FormError } from "@/shared/components/form-error";
+import { useExpenseForm } from "../hooks/use-expense-form";
+import type { Member } from "../types/expense.types";
+import { MemberAvatar } from "./member-avatar";
+import { ParticipantRow } from "./participant-row";
+import { LABEL_CLASS } from "@/shared/styles/label";
 
 type ExpenseFormProps = {
 	groupId: string;
@@ -61,103 +60,31 @@ const ExpenseFormInner = ({
 	profile,
 	liff,
 }: ExpenseFormInnerProps) => {
-	const [isPending, startTransition] = useTransition();
-	/** 支払い者 */
-	const [payerUserId, setPayerUserId] = useState<string>(profile.userId);
-	/** 支出タイトル */
-	const [title, setTitle] = useState<string>("");
-	/** 金額 */
-	const [amount, setAmount] = useState<string>("");
-	/** 支払日 */
-	const [paidAt, setPaidAt] = useState<string>(
-		new Date().toISOString().split("T")[0],
-	);
-	/** 支出参加者（userId → 負担金額） */
-	const [participantAmounts, setParticipantAmounts] = useState<
-		Map<string, string>
-	>(new Map());
-	/** エラーメッセージ */
-	const [error, setError] = useState<string | null>(null);
-
-	/** 支出を登録する関数 */
-	const handleSubmit = (e: React.FormEvent) => {
-		e.preventDefault();
-
-		startTransition(async () => {
-			setError(null);
-
-			const expenseParticipants: ExpenseParticipant[] = Array.from(
-				participantAmounts.entries(),
-			).map(([lineUserId, shareAmount]) => ({ lineUserId, shareAmount }));
-
-			const validationError = validateExpenseForm({
-				payerUserId,
-				title,
-				amount: amount.replace(/,/g, ""),
-				paidAt,
-				expenseParticipants,
-			});
-
-			if (validationError) {
-				setError(validationError);
-				return;
-			}
-
-			try {
-				await createExpenseRequest({
-					lineGroupId: groupId,
-					payerUserId,
-					title,
-					amount,
-					paidAt,
-					expenseParticipants,
-				});
-
-				liff.closeWindow();
-			} catch (error) {
-				if (error instanceof ApiError) {
-					setError(error.message);
-				} else {
-					setError("予期しないエラーが発生しました");
-				}
-			}
-		});
-	};
-
-	/** 参加者をトグルする関数 */
-	const toggleMember = (lineUserId: string) => {
-		setParticipantAmounts((prev) => {
-			const next = new Map(prev);
-			if (next.has(lineUserId)) {
-				next.delete(lineUserId);
-			} else {
-				const defaultShare = amount
-					? (Number(amount.replace(/,/g, "")) / (prev.size + 1)).toFixed(0)
-					: "";
-				next.set(lineUserId, defaultShare);
-			}
-			return next;
-		});
-	};
-
-	/** 負担金額を更新する関数 */
-	const updateShareAmount = (lineUserId: string, value: string) => {
-		setParticipantAmounts((prev) => new Map(prev).set(lineUserId, value));
-	};
+	const {
+		isPending,
+		payerUserId,
+		setPayerUserId,
+		title,
+		setTitle,
+		amount,
+		setAmount,
+		paidAt,
+		setPaidAt,
+		error,
+		participantAmounts,
+		toggleMember,
+		updateShareAmount,
+		handleSubmit,
+	} = useExpenseForm({ groupId, profile, liff });
 
 	return (
 		<form onSubmit={handleSubmit} className="flex flex-col gap-6 p-6">
-			{/* エラー */}
 			<FormError error={error} />
 
 			{/* 基本情報カード */}
 			<div className="bg-white rounded-2xl shadow-sm overflow-hidden divide-y divide-zinc-100">
-				{/* タイトル */}
 				<div className="px-4 pt-3 pb-2">
-					<Label
-						htmlFor="title"
-						className="text-[11px] font-semibold text-zinc-400 uppercase tracking-wider mb-1"
-					>
+					<Label htmlFor="title" className={`${LABEL_CLASS} mb-1`}>
 						タイトル
 					</Label>
 					<Input
@@ -170,12 +97,8 @@ const ExpenseFormInner = ({
 					/>
 				</div>
 
-				{/* 合計金額 */}
 				<div className="px-4 pt-3 pb-2">
-					<Label
-						htmlFor="amount"
-						className="text-[11px] font-semibold text-zinc-400 uppercase tracking-wider mb-1"
-					>
+					<Label htmlFor="amount" className={`${LABEL_CLASS} mb-1`}>
 						合計金額
 					</Label>
 					<div className="flex items-center gap-1.5">
@@ -192,12 +115,8 @@ const ExpenseFormInner = ({
 					</div>
 				</div>
 
-				{/* 支払い日 */}
 				<div className="px-4 pt-3 pb-2">
-					<Label
-						htmlFor="paidAt"
-						className="text-[11px] font-semibold text-zinc-400 uppercase tracking-wider mb-1"
-					>
+					<Label htmlFor="paidAt" className={`${LABEL_CLASS} mb-1`}>
 						支払い日
 					</Label>
 					<Input
@@ -213,10 +132,7 @@ const ExpenseFormInner = ({
 
 			{/* 支払い者カード */}
 			<div className="bg-white rounded-2xl shadow-sm px-4 py-4">
-				<Label
-					htmlFor="payerUserId"
-					className="text-[11px] font-semibold text-zinc-400 uppercase tracking-wider mb-3"
-				>
+				<Label htmlFor="payerUserId" className={`${LABEL_CLASS} mb-3`}>
 					支払い者
 				</Label>
 				<Select value={payerUserId} onValueChange={setPayerUserId}>
@@ -227,17 +143,11 @@ const ExpenseFormInner = ({
 						{members.map((member) => (
 							<SelectItem key={member.lineUserId} value={member.lineUserId}>
 								<div className="flex items-center gap-2 py-0.5">
-									{member.pictureUrl ? (
-										<Image
-											src={member.pictureUrl}
-											alt={member.displayName}
-											width={24}
-											height={24}
-											className="rounded-full"
-										/>
-									) : (
-										<div className="w-6 h-6 rounded-full bg-zinc-200" />
-									)}
+									<MemberAvatar
+										pictureUrl={member.pictureUrl}
+										displayName={member.displayName}
+										size={24}
+									/>
 									<span>{member.displayName}</span>
 								</div>
 							</SelectItem>
@@ -249,65 +159,25 @@ const ExpenseFormInner = ({
 			{/* 参加者カード */}
 			<div className="bg-white rounded-2xl shadow-sm overflow-hidden">
 				<div className="px-4 pt-4 pb-2">
-					<Label
-						htmlFor="participantAmounts"
-						className="text-[11px] font-semibold text-zinc-400 uppercase tracking-wider"
-					>
+					<Label htmlFor="participantAmounts" className={LABEL_CLASS}>
 						参加者と負担金額
 					</Label>
 				</div>
-				{members.map((member, i) => {
-					const isSelected = participantAmounts.has(member.lineUserId);
-					return (
-						<label
-							htmlFor={`participant-${member.lineUserId}`}
-							key={member.lineUserId}
-							className={`flex items-center gap-3 px-4 py-3.5 cursor-pointer transition-colors ${
-								i < members.length - 1 ? "border-b border-zinc-100" : ""
-							} ${isSelected ? "bg-indigo-50" : "hover:bg-zinc-50"}`}
-						>
-							<Input
-								id={`participant-${member.lineUserId}`}
-								type="checkbox"
-								checked={isSelected}
-								onChange={() => toggleMember(member.lineUserId)}
-								className="w-[18px] h-[18px] accent-indigo-600 shrink-0"
-							/>
-							{member.pictureUrl ? (
-								<Image
-									src={member.pictureUrl}
-									alt={member.displayName}
-									width={36}
-									height={36}
-									className="rounded-full shrink-0"
-								/>
-							) : (
-								<div className="w-9 h-9 rounded-full bg-zinc-200 shrink-0" />
-							)}
-							<span className="flex-1 text-sm font-medium">
-								{member.displayName}
-							</span>
-
-							<div className="flex items-center gap-0.5 shrink-0">
-								<span className="text-zinc-400 text-sm">¥</span>
-								<Input
-									id={`participant-amount-${member.lineUserId}`}
-									type="text"
-									value={participantAmounts.get(member.lineUserId) ?? ""}
-									onChange={(e) =>
-										updateShareAmount(member.lineUserId, e.target.value)
-									}
-									onClick={(e) => e.stopPropagation()}
-									placeholder="0"
-									className={CARD_INPUT_CLASS}
-								/>
-							</div>
-						</label>
-					);
-				})}
+				{members.map((member, i) => (
+					<ParticipantRow
+						key={member.lineUserId}
+						member={member}
+						isSelected={participantAmounts.has(member.lineUserId)}
+						shareAmount={participantAmounts.get(member.lineUserId) ?? ""}
+						isLast={i === members.length - 1}
+						onToggle={() => toggleMember(member.lineUserId)}
+						onAmountChange={(value) =>
+							updateShareAmount(member.lineUserId, value)
+						}
+					/>
+				))}
 			</div>
 
-			{/* 送信ボタン */}
 			<Button type="submit" disabled={isPending}>
 				{isPending ? "登録中..." : "登録する"}
 			</Button>
