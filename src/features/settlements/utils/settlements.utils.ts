@@ -1,4 +1,4 @@
-import { Settlement, UserBalance } from "../types/expense.types";
+import { Settlement, UserBalance } from "../types/settlements.types";
 
 /**
  * 精算を計算する関数
