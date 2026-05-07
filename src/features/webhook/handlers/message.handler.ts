@@ -2,7 +2,12 @@ import { webhook } from "@line/bot-sdk";
 import { handleRegister } from "./register.handler";
 import { handleJoin } from "./join.handler";
 import { handleDisplay } from "./display.handler";
+import { handleHelp } from "./help.handler";
 
+/**
+ * メッセージイベントを処理するハンドラー
+ * @param event メッセージイベント
+ */
 export async function handleMessage(event: webhook.MessageEvent) {
 	if (event.source?.type !== "group") return;
 
@@ -22,6 +27,9 @@ export async function handleMessage(event: webhook.MessageEvent) {
 			break;
 		case "表示":
 			await handleDisplay(replyToken, groupId);
+			break;
+		case "ヘルプ":
+			await handleHelp(replyToken);
 			break;
 		default:
 	}

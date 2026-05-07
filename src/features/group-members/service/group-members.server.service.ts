@@ -5,6 +5,7 @@ import { eq } from "drizzle-orm";
 import { RegisterGroupMemberReq } from "../types/group-members.types";
 import { createGroupMembersSchema } from "../schemas/group-members.schema";
 import { ApiError } from "@/lib/api/error";
+import { lineClient } from "@/lib/line/client";
 
 /**
  * グループメンバーを登録する関数
@@ -33,6 +34,16 @@ export const registerGroupMember = async (
 				pictureUrl: request.pictureUrl,
 			},
 		});
+
+	await lineClient.pushMessage({
+		to: request.lineGroupId,
+		messages: [
+			{
+				type: "text",
+				text: `👋 ${request.displayName} が参加しました`,
+			},
+		],
+	});
 };
 
 /**

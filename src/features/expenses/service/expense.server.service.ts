@@ -3,6 +3,7 @@ import { CreateExpenseReq } from "../types/expense.types";
 import { expenseParticipants, expenses } from "@/lib/db/schema";
 import { ApiError } from "@/lib/api/error";
 import { createExpenseSchema } from "../schemas/expense.schema";
+import { lineClient } from "@/lib/line/client";
 
 /**
  * 支出を登録する関数
@@ -35,5 +36,15 @@ export const createExpense = async (request: CreateExpenseReq) => {
 				shareAmount: participant.shareAmount,
 			})),
 		);
+	});
+
+	await lineClient.pushMessage({
+		to: request.lineGroupId,
+		messages: [
+			{
+				type: "text",
+				text: `📝 ${request.title} ¥${Number(request.amount).toLocaleString("ja-JP")} を登録しました`,
+			},
+		],
 	});
 };
