@@ -6,7 +6,6 @@ const {
 	mockReturning,
 	mockValues,
 	mockInsert,
-	mockTx,
 	mockTxTransaction,
 	mockPushMessage,
 } = vi.hoisted(() => {
