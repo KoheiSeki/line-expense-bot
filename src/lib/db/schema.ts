@@ -1,6 +1,5 @@
 import {
 	date,
-	decimal,
 	integer,
 	pgTable,
 	serial,
@@ -20,7 +19,7 @@ export const expenses = pgTable("expenses", {
 	/** タイトル */
 	title: varchar("title", { length: 255 }).notNull(),
 	/** 金額 */
-	amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
+	amount: integer("amount").notNull(),
 	/** 支払い日 */
 	paidAt: date("paid_at").notNull(),
 	/** 作成日時 */
@@ -40,7 +39,7 @@ export const expenseParticipants = pgTable(
 		/** ラインユーザーID */
 		lineUserId: varchar("line_user_id", { length: 50 }).notNull(),
 		/** 負担金額 */
-		shareAmount: decimal("share_amount", { precision: 10, scale: 2 }).notNull(),
+		shareAmount: integer("share_amount").notNull(),
 		/** 作成日時 */
 		createdAt: timestamp("created_at", { withTimezone: true })
 			.defaultNow()

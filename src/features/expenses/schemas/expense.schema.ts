@@ -3,9 +3,7 @@ import { z } from "zod";
 /** 支出参加者スキーマ定義 */
 const participantSchema = z.object({
 	lineUserId: z.string().min(1).max(50),
-	shareAmount: z
-		.string()
-		.regex(/^\d+(\.\d{1,2})?$/, "負担金額の形式が不正です"),
+	shareAmount: z.string().regex(/^\d+$/, "負担金額の形式が不正です"),
 });
 
 /** 支出フォーム検証スキーマ定義 */
@@ -19,7 +17,7 @@ export const expenseFormSchema = z
 			.string()
 			.min(1, "タイトルを入力してください")
 			.max(255, "タイトルは255文字以内にしてください"),
-		amount: z.string().regex(/^\d+(\.\d{1,2})?$/, "金額の形式が不正です"),
+		amount: z.string().regex(/^\d+$/, "金額の形式が不正です"),
 		paidAt: z.iso.date("支払い日を選択してください"),
 		expenseParticipants: z
 			.array(participantSchema)

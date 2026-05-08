@@ -23,7 +23,7 @@ export const createExpense = async (request: CreateExpenseReq) => {
 				lineGroupId: request.lineGroupId,
 				payerUserId: request.payerUserId,
 				title: request.title,
-				amount: request.amount,
+				amount: parseInt(request.amount, 10),
 				paidAt: request.paidAt,
 			})
 			.returning({ expenseId: expenses.expenseId });
@@ -33,7 +33,7 @@ export const createExpense = async (request: CreateExpenseReq) => {
 			request.expenseParticipants.map((participant) => ({
 				expenseId: expense.expenseId,
 				lineUserId: participant.lineUserId,
-				shareAmount: participant.shareAmount,
+				shareAmount: parseInt(participant.shareAmount, 10),
 			})),
 		);
 	});
