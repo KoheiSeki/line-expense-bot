@@ -4,6 +4,7 @@ import { handleJoin } from "./join.handler";
 import { handleDisplay } from "./display.handler";
 import { handleHelp } from "./help.handler";
 import { handleClose } from "./close.handler";
+import { handleReopen } from "./reopen.handler";
 
 /**
  * メッセージイベントを処理するハンドラー
