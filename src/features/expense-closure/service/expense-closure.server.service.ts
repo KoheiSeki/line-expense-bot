@@ -1,14 +1,18 @@
-import { db } from "@/lib/db/client";
+import { db, DbTransaction } from "@/lib/db/client";
 import { eq, sql } from "drizzle-orm";
 import { groupExpenseManagement } from "@/lib/db/schema";
 
 /**
  * グループの支出追加が締め切られているか判定する関数
+ * @param tx トランザクション
  * @param lineGroupId ライングループID
  * @returns グループの支出追加締切フラグ
  */
-export const isGroupExpenseManagementClosed = async (lineGroupId: string) => {
-	const result = await db
+export const isGroupExpenseManagementClosed = async (
+	tx: DbTransaction | undefined,
+	lineGroupId: string,
+) => {
+	const result = await (tx ?? db)
 		.select({ closedAt: groupExpenseManagement.closedAt })
 		.from(groupExpenseManagement)
 		.where(eq(groupExpenseManagement.lineGroupId, lineGroupId));
