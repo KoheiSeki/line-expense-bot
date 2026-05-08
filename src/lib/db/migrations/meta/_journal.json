@@ -22,6 +22,13 @@
       "when": 1778232826065,
       "tag": "0002_conscious_robbie_robertson",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1778233614898,
+      "tag": "0003_foamy_rictor",
+      "breakpoints": true
     }
   ]
 }

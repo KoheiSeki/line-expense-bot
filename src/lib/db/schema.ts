@@ -72,8 +72,8 @@ export const groupMembers = pgTable(
 export const groupExpenseManagement = pgTable("group_expense_management", {
 	/** ライングループID */
 	lineGroupId: varchar("line_group_id", { length: 50 }).notNull().primaryKey(),
-	/** 精算完了日時 */
-	completedAt: timestamp("completed_at", { withTimezone: true }).defaultNow(),
+	/** 締め時刻 */
+	closedAt: timestamp("closed_at", { withTimezone: true }).defaultNow(),
 	/** 更新日時 */
 	updatedAt: timestamp("updated_at", { withTimezone: true })
 		.defaultNow()
