@@ -68,3 +68,39 @@ export const groupMembers = pgTable(
 	},
 	(table) => [primaryKey({ columns: [table.lineGroupId, table.lineUserId] })],
 );
+
+/** グループ管理テーブル */
+export const groupExpenseManagement = pgTable("group_expense_management", {
+	/** ライングループID */
+	lineGroupId: varchar("line_group_id", { length: 50 }).notNull().primaryKey(),
+	/** 精算完了日時 */
+	completedAt: timestamp("completed_at", { withTimezone: true }).defaultNow(),
+	/** 更新日時 */
+	updatedAt: timestamp("updated_at", { withTimezone: true })
+		.defaultNow()
+		.notNull(),
+});
+
+/** グループ精算管理テーブル */
+export const groupSettlementProgress = pgTable(
+	"group_settlement_progress",
+	{
+		/** ライングループID */
+		lineGroupId: varchar("line_group_id", { length: 50 }).notNull(),
+		/** 送金者ユーザーID */
+		fromUserId: varchar("from_user_id", { length: 50 }).notNull(),
+		/** 受取者ユーザーID */
+		toUserId: varchar("to_user_id", { length: 50 }).notNull(),
+		/** 精算済み金額 */
+		settledAmount: integer("settled_amount").notNull(),
+		/** 更新日時 */
+		updatedAt: timestamp("updated_at", { withTimezone: true })
+			.defaultNow()
+			.notNull(),
+	},
+	(table) => [
+		primaryKey({
+			columns: [table.lineGroupId, table.fromUserId, table.toUserId],
+		}),
+	],
+);
