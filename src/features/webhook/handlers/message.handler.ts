@@ -3,6 +3,7 @@ import { handleRegister } from "./register.handler";
 import { handleJoin } from "./join.handler";
 import { handleDisplay } from "./display.handler";
 import { handleHelp } from "./help.handler";
+import { handleClose } from "./close.handler";
 
 /**
  * メッセージイベントを処理するハンドラー
@@ -27,6 +28,12 @@ export async function handleMessage(event: webhook.MessageEvent) {
 			break;
 		case "表示":
 			await handleDisplay(replyToken, groupId);
+			break;
+		case "完了":
+			await handleClose(replyToken, groupId);
+			break;
+		case "締め解除":
+			await handleReopen(replyToken, groupId);
 			break;
 		case "ヘルプ":
 			await handleHelp(replyToken);
