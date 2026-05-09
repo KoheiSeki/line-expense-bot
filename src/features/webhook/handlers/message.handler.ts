@@ -7,20 +7,18 @@ import { handleClose } from "./close.handler";
 import { handleReopen } from "./reopen.handler";
 import { lineClient } from "@/lib/line/client";
 import { ApiError } from "@/lib/api/error";
+import { handleSettlementComplete } from "./settlement-complete.handler";
+import { GroupTextContext } from "../types/webhook.types";
 
 /**
  * メッセージイベントを処理するハンドラー
  * @param event メッセージイベント
  */
 export async function handleMessage(event: webhook.MessageEvent) {
-	if (event.source?.type !== "group") return;
+	const context = parseGroupTextContext(event);
+	if (!context) return;
 
-	const message = event.message as webhook.TextMessageContent;
-	if (message.type !== "text") return;
-
-	const text = message.text.trim();
-	const groupId = event.source.groupId;
-	const replyToken = event.replyToken!;
+	const { text, replyToken, groupId, userId } = context;
 
 	try {
 		switch (text) {
@@ -38,6 +36,9 @@ export async function handleMessage(event: webhook.MessageEvent) {
 				break;
 			case "締め解除":
 				await handleReopen(replyToken, groupId);
+				break;
+			case "済":
+				await handleSettlementComplete(replyToken, groupId, userId);
 				break;
 			case "ヘルプ":
 				await handleHelp(replyToken);
@@ -62,4 +63,35 @@ export async function handleMessage(event: webhook.MessageEvent) {
 			],
 		});
 	}
+}
+
+/**
+ * グループテキストコンテキストを取得する関数
+ * @param event メッセージイベント
+ * @returns グループテキストコンテキスト
+ */
+function parseGroupTextContext(
+	event: webhook.MessageEvent,
+): GroupTextContext | null {
+	if (event.source?.type !== "group") return null;
+
+	const message = event.message as webhook.TextMessageContent;
+	if (message.type !== "text") return null;
+
+	const text = message.text.trim();
+
+	const groupId = event.source.groupId;
+	if (!groupId) return null;
+
+	const userId = event.source.userId;
+	if (!userId) return null;
+
+	const replyToken = event.replyToken;
+	if (!replyToken) return null;
+	return {
+		text,
+		groupId,
+		userId,
+		replyToken,
+	};
 }
