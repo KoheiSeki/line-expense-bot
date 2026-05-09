@@ -1,6 +1,7 @@
 import { db, DbTransaction } from "@/lib/db/client";
 import { eq, sql } from "drizzle-orm";
 import { groupExpenseManagement } from "@/lib/db/schema";
+import { ApiError } from "@/lib/api/error";
 
 /**
  * グループの支出追加が締め切られているか判定する関数
@@ -42,8 +43,22 @@ export const closeGroupExpenseManagement = async (lineGroupId: string) => {
  * @param lineGroupId ライングループID
  */
 export const reopenGroupExpenseManagement = async (lineGroupId: string) => {
-	await db
-		.update(groupExpenseManagement)
-		.set({ closedAt: null, updatedAt: sql`now()` })
-		.where(eq(groupExpenseManagement.lineGroupId, lineGroupId));
+	await db.transaction(async (tx) => {
+		const rows = await tx
+			.select({ closedAt: groupExpenseManagement.closedAt })
+			.from(groupExpenseManagement)
+			.where(eq(groupExpenseManagement.lineGroupId, lineGroupId));
+
+		if (rows.length === 0 || rows[0].closedAt === null) {
+			throw new ApiError(400, "支出の追加は締め切られていません。");
+		}
+
+		await tx
+			.update(groupExpenseManagement)
+			.set({
+				closedAt: null,
+				updatedAt: sql`now()`,
+			})
+			.where(eq(groupExpenseManagement.lineGroupId, lineGroupId));
+	});
 };

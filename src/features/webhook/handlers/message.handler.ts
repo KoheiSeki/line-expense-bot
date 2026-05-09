@@ -6,6 +6,7 @@ import { handleHelp } from "./help.handler";
 import { handleClose } from "./close.handler";
 import { handleReopen } from "./reopen.handler";
 import { lineClient } from "@/lib/line/client";
+import { ApiError } from "@/lib/api/error";
 
 /**
  * メッセージイベントを処理するハンドラー
@@ -46,12 +47,17 @@ export async function handleMessage(event: webhook.MessageEvent) {
 	} catch (err) {
 		console.error("[Error] Failed to handle message", err);
 
+		const errorMessage =
+			err instanceof ApiError
+				? err.message
+				: "エラーが発生しました。時間をおいて再度お試しください。";
+
 		await lineClient.replyMessage({
 			replyToken,
 			messages: [
 				{
 					type: "text",
-					text: "エラーが発生しました。時間をおいて再度お試しください。",
+					text: errorMessage,
 				} satisfies messagingApi.TextMessage,
 			],
 		});
