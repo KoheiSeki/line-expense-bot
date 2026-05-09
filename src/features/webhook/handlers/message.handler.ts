@@ -7,7 +7,10 @@ import { handleClose } from "./close.handler";
 import { handleReopen } from "./reopen.handler";
 import { lineClient } from "@/lib/line/client";
 import { ApiError } from "@/lib/api/error";
-import { handleSettlementComplete } from "./settlement-complete.handler";
+import {
+	handleCompleteAllSettlements,
+	handleCompleteSettlement,
+} from "./settlement-complete.handler";
 import { GroupTextContext } from "../types/webhook.types";
 
 /**
@@ -38,7 +41,10 @@ export async function handleMessage(event: webhook.MessageEvent) {
 				await handleReopen(replyToken, groupId);
 				break;
 			case "済":
-				await handleSettlementComplete(replyToken, groupId, userId);
+				await handleCompleteSettlement(replyToken, groupId, userId);
+				break;
+			case "全員精算完了":
+				await handleCompleteAllSettlements(replyToken, groupId);
 				break;
 			case "ヘルプ":
 				await handleHelp(replyToken);
