@@ -5,7 +5,7 @@ import {
 	Settlement,
 	UserBalance,
 } from "../types/settlements.types";
-import { db } from "@/lib/db/client";
+import { db, DbTransaction } from "@/lib/db/client";
 import { sql } from "drizzle-orm";
 import { calculateSettlements } from "../utils/settlements.utils";
 import { fetchGroupMembers } from "@/features/group-members/service/group-members.server.service";
@@ -18,17 +18,8 @@ import { fetchGroupMembers } from "@/features/group-members/service/group-member
 export const fetchSettlements = async (
 	lineGroupId: string,
 ): Promise<SettlementResult[]> => {
-	// バリデーション
-	const result = fetchSettlementsSchema.safeParse({ lineGroupId });
-	if (!result.success) {
-		throw new ApiError(400, result.error.issues[0].message);
-	}
-
-	// メンバー毎の残高取得
-	const balances = await fetchUserBalances(lineGroupId);
-
-	// 精算計算（貪欲法）
-	const settlements: Settlement[] = calculateSettlements(balances);
+	// 精算内容取得
+	const settlements = await fetchGreedySettlements(lineGroupId);
 
 	// 表示用データ取得
 	const results = await buildSettlementResults(lineGroupId, settlements);
@@ -37,14 +28,41 @@ export const fetchSettlements = async (
 };
 
 /**
+ * 貪欲法で精算内容を取得する関数
+ * @param lineGroupId ライングループID
+ * @param tx トランザクション
+ * @returns 精算内容
+ */
+export const fetchGreedySettlements = async (
+	lineGroupId: string,
+	tx?: DbTransaction,
+): Promise<Settlement[]> => {
+	// バリデーション
+	const result = fetchSettlementsSchema.safeParse({ lineGroupId });
+	if (!result.success) {
+		throw new ApiError(400, result.error.issues[0].message);
+	}
+
+	// 1. メンバーごとの残高取得
+	const balances = await fetchUserBalances(lineGroupId, tx);
+
+	// 2. 精算計算（貪欲法）
+	const settlements = calculateSettlements(balances);
+
+	return settlements;
+};
+
+/**
  * ユーザー毎の残高を取得する関数
  * @param lineGroupId ライングループID
+ * @param tx トランザクション
  * @returns ユーザー毎の残高
  */
-const fetchUserBalances = async (
+export const fetchUserBalances = async (
 	lineGroupId: string,
+	tx?: DbTransaction,
 ): Promise<UserBalance[]> => {
-	const rows = await db.execute(sql`
+	const rows = await (tx ?? db).execute(sql`
       SELECT user_id AS "lineUserId", SUM(paid) - SUM(owed) AS "netBalance"
       FROM (
       SELECT payer_user_id AS user_id,
