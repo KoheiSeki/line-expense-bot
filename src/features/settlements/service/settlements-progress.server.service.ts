@@ -38,7 +38,6 @@ export const completeAllUserSettlement = async (
 		await upsertSettlementProgress(settlements, lineGroupId, tx);
 	});
 };
-
 /**
  * 該当ユーザーの精算内容を取得する関数
  * @param lineUserId ラインユーザーID
