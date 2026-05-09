@@ -8,6 +8,7 @@ const {
 	mockInsert,
 	mockTxTransaction,
 	mockPushMessage,
+	mockIsGroupExpenseManagementClosed,
 } = vi.hoisted(() => {
 	const mockReturning = vi.fn().mockReturnValue([{ expenseId: 1 }]);
 	const mockValues = vi.fn().mockReturnValue({ returning: mockReturning });
@@ -17,6 +18,7 @@ const {
 		.fn()
 		.mockImplementation(async (cb) => await cb(mockTx));
 	const mockPushMessage = vi.fn().mockResolvedValue(undefined);
+	const mockIsGroupExpenseManagementClosed = vi.fn().mockResolvedValue(false);
 	return {
 		mockReturning,
 		mockValues,
@@ -24,6 +26,7 @@ const {
 		mockTx,
 		mockTxTransaction,
 		mockPushMessage,
+		mockIsGroupExpenseManagementClosed,
 	};
 });
 
@@ -37,6 +40,10 @@ vi.mock("@/lib/line/client", () => ({
 	lineClient: {
 		pushMessage: mockPushMessage,
 	},
+}));
+
+vi.mock("@/features/expense-closure/service/expense-closure.server.service", () => ({
+	isGroupExpenseManagementClosed: mockIsGroupExpenseManagementClosed,
 }));
 
 /** 正常なリクエスト */
@@ -61,6 +68,7 @@ function setupDbMockForSuccessfulTransaction() {
 describe("createExpense", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
+		mockIsGroupExpenseManagementClosed.mockResolvedValue(false);
 		mockReturning.mockResolvedValue([{ expenseId: 1 }]);
 		setupDbMockForSuccessfulTransaction();
 	});
@@ -92,30 +100,44 @@ describe("createExpense", () => {
 		);
 	});
 
-	it("lineGroupIdが空の場合はApiErrorを投げ、DBとLINEを呼ばない", async () => {
+	it("lineGroupIdが空の場合はApiErrorを投げ、insertとLINEを呼ばない", async () => {
 		await expect(
 			createExpense({ ...validRequest, lineGroupId: "" }),
 		).rejects.toMatchObject({
 			status: 400,
 			message: "グループIDの取得に失敗しました",
 		});
-		expect(mockTxTransaction).not.toHaveBeenCalled();
+		expect(mockTxTransaction).toHaveBeenCalledOnce();
+		expect(mockInsert).not.toHaveBeenCalled();
 		expect(mockPushMessage).not.toHaveBeenCalled();
 	});
 
-	it("lineGroupIdが50文字を超える場合はApiErrorを投げ、DBとLINEを呼ばない", async () => {
+	it("lineGroupIdが50文字を超える場合はApiErrorを投げ、insertとLINEを呼ばない", async () => {
 		await expect(
 			createExpense({ ...validRequest, lineGroupId: "a".repeat(51) }),
 		).rejects.toMatchObject({
 			status: 400,
 			message: "グループIDの形式が不正です",
 		});
-		expect(mockTxTransaction).not.toHaveBeenCalled();
+		expect(mockTxTransaction).toHaveBeenCalledOnce();
+		expect(mockInsert).not.toHaveBeenCalled();
+		expect(mockPushMessage).not.toHaveBeenCalled();
+	});
+
+	it("グループの支出追加が締め切られている場合はApiErrorを投げ、insertとLINEを呼ばない", async () => {
+		mockIsGroupExpenseManagementClosed.mockResolvedValueOnce(true);
+		await expect(createExpense(validRequest)).rejects.toMatchObject({
+			status: 400,
+			message: "グループの支出追加が締め切られています",
+		});
+		expect(mockIsGroupExpenseManagementClosed).toHaveBeenCalledOnce();
+		expect(mockInsert).not.toHaveBeenCalled();
 		expect(mockPushMessage).not.toHaveBeenCalled();
 	});
 
 	it("db.transactionが失敗した場合はpushMessageを呼ばない", async () => {
 		mockTxTransaction.mockRejectedValueOnce(new Error("db error"));
+		await expect(createExpense(validRequest)).rejects.toThrow("db error");
 		expect(mockPushMessage).not.toHaveBeenCalled();
 	});
 });
