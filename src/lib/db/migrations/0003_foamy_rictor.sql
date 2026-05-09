@@ -1,0 +1,1 @@
+ALTER TABLE "group_expense_management" RENAME COLUMN "completed_at" TO "closed_at";

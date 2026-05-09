@@ -48,14 +48,14 @@ const fetchUserBalances = async (
       SELECT user_id AS "lineUserId", SUM(paid) - SUM(owed) AS "netBalance"
       FROM (
       SELECT payer_user_id AS user_id,
-              CAST(amount AS float) AS paid,
+              CAST(amount AS INTEGER) AS paid,
               0 AS owed
       FROM expenses
       WHERE line_group_id = ${lineGroupId}
       UNION ALL
       SELECT ep.line_user_id AS user_id,
               0 AS paid,
-              CAST(ep.share_amount AS float) AS owed
+              CAST(ep.share_amount AS INTEGER) AS owed
       FROM expense_participants ep
       JOIN expenses e ON ep.expense_id = e.expense_id
       WHERE e.line_group_id = ${lineGroupId}

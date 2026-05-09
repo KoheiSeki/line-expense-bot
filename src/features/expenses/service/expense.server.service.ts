@@ -4,18 +4,27 @@ import { expenseParticipants, expenses } from "@/lib/db/schema";
 import { ApiError } from "@/lib/api/error";
 import { createExpenseSchema } from "../schemas/expense.schema";
 import { lineClient } from "@/lib/line/client";
+import { isGroupExpenseManagementClosed } from "@/features/expense-closure/service/expense-closure.server.service";
 
 /**
  * 支出を登録する関数
  * @param request 支出登録リクエスト
  */
 export const createExpense = async (request: CreateExpenseReq) => {
-	const result = createExpenseSchema.safeParse(request);
-	if (!result.success) {
-		throw new ApiError(400, result.error.issues[0].message);
-	}
-
 	await db.transaction(async (tx) => {
+		const isClosed = await isGroupExpenseManagementClosed(
+			tx,
+			request.lineGroupId,
+		);
+		if (isClosed) {
+			throw new ApiError(400, "グループの支出追加が締め切られています");
+		}
+
+		const result = createExpenseSchema.safeParse(request);
+		if (!result.success) {
+			throw new ApiError(400, result.error.issues[0].message);
+		}
+
 		/** 支出テーブルに登録 */
 		const [expense] = await tx
 			.insert(expenses)
@@ -23,7 +32,7 @@ export const createExpense = async (request: CreateExpenseReq) => {
 				lineGroupId: request.lineGroupId,
 				payerUserId: request.payerUserId,
 				title: request.title,
-				amount: request.amount,
+				amount: parseInt(request.amount, 10),
 				paidAt: request.paidAt,
 			})
 			.returning({ expenseId: expenses.expenseId });
@@ -33,7 +42,7 @@ export const createExpense = async (request: CreateExpenseReq) => {
 			request.expenseParticipants.map((participant) => ({
 				expenseId: expense.expenseId,
 				lineUserId: participant.lineUserId,
-				shareAmount: participant.shareAmount,
+				shareAmount: parseInt(participant.shareAmount, 10),
 			})),
 		);
 	});
