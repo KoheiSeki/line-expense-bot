@@ -5,5 +5,5 @@ export const fetchSettlementsSchema = z.object({
 	lineGroupId: z
 		.string()
 		.min(1, "グループIDの取得に失敗しました")
-		.max(50, "ユーザーIDの形式が不正です"),
+		.max(50, "グループIDの形式が不正です"),
 });

@@ -43,10 +43,8 @@ export const fetchGreedySettlements = async (
 		throw new ApiError(400, result.error.issues[0].message);
 	}
 
-	// 1. メンバーごとの残高取得
 	const balances = await fetchUserBalances(lineGroupId, tx);
 
-	// 2. 精算計算（貪欲法）
 	const settlements = calculateSettlements(balances);
 
 	return settlements;
