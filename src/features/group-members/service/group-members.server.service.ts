@@ -1,5 +1,5 @@
 import { Member } from "@/features/expenses/types/expense.types";
-import { db } from "@/lib/db/client";
+import { db, DbTransaction } from "@/lib/db/client";
 import { groupMembers } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { RegisterGroupMemberReq } from "../types/group-members.types";
@@ -13,13 +13,14 @@ import { lineClient } from "@/lib/line/client";
  */
 export const registerGroupMember = async (
 	request: RegisterGroupMemberReq,
+	tx?: DbTransaction,
 ): Promise<void> => {
 	const result = createGroupMembersSchema.safeParse(request);
 	if (!result.success) {
 		throw new ApiError(400, result.error.issues[0].message);
 	}
 
-	await db
+	await (tx ?? db)
 		.insert(groupMembers)
 		.values({
 			lineGroupId: request.lineGroupId,
@@ -49,10 +50,14 @@ export const registerGroupMember = async (
 /**
  * グループメンバーを取得する関数
  * @param groupId グループID
+ * @param tx トランザクション
  * @returns グループメンバー
  */
-export const fetchGroupMembers = async (groupId: string): Promise<Member[]> => {
-	const members: Member[] = await db
+export const fetchGroupMembers = async (
+	groupId: string,
+	tx?: DbTransaction,
+): Promise<Member[]> => {
+	const members: Member[] = await (tx ?? db)
 		.select()
 		.from(groupMembers)
 		.where(eq(groupMembers.lineGroupId, groupId))
@@ -65,4 +70,19 @@ export const fetchGroupMembers = async (groupId: string): Promise<Member[]> => {
 		);
 
 	return members;
+};
+
+/**
+ * グループメンバーをマップに変換する関数
+ * @param groupMembers グループメンバー
+ * @returns グループメンバーをマップに変換したオブジェクト
+ */
+export const buildGroupMemberMap = (
+	groupMembers: Member[],
+): Record<string, string> => {
+	const groupMemberMap: Record<string, string> = Object.fromEntries(
+		groupMembers.map((member) => [member.lineUserId, member.displayName]),
+	);
+
+	return groupMemberMap;
 };

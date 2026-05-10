@@ -45,3 +45,21 @@ export type ExpenseForm = {
 	/** 支出参加者 */
 	expenseParticipants: ExpenseParticipant[];
 };
+
+/** 支出テーブル */
+export type Expense = {
+	/** 支出ID */
+	expenseId: number;
+	/** ライングループID */
+	lineGroupId: string;
+	/** 支払い者ユーザーID */
+	payerUserId: string;
+	/** タイトル */
+	title: string;
+	/** 金額 */
+	amount: number;
+	/** 支払い日 */
+	paidAt: string;
+	/** 作成日時 */
+	createdAt: Date;
+};

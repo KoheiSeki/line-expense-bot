@@ -1,10 +1,11 @@
-import { db } from "@/lib/db/client";
-import { CreateExpenseReq } from "../types/expense.types";
+import { db, DbTransaction } from "@/lib/db/client";
+import { CreateExpenseReq, Expense } from "../types/expense.types";
 import { expenseParticipants, expenses } from "@/lib/db/schema";
 import { ApiError } from "@/lib/api/error";
 import { createExpenseSchema } from "../schemas/expense.schema";
 import { lineClient } from "@/lib/line/client";
 import { isGroupExpenseManagementClosed } from "@/features/expense-closure/service/expense-closure.server.service";
+import { desc, eq } from "drizzle-orm";
 
 /**
  * 支出を登録する関数
@@ -56,4 +57,24 @@ export const createExpense = async (request: CreateExpenseReq) => {
 			},
 		],
 	});
+};
+
+/**
+ * 支出テーブルのデータを取得する関数
+ * @param lineGroupId ライングループID
+ * @param tx トランザクション
+ * @returns 支出テーブルのデータ
+ */
+export const fetchExpensesByLineGroupId = async (
+	lineGroupId: string,
+	tx?: DbTransaction,
+): Promise<Expense[]> => {
+	const rows: Expense[] = await (tx ?? db)
+		.select()
+		.from(expenses)
+		.where(eq(expenses.lineGroupId, lineGroupId))
+		.orderBy(desc(expenses.createdAt))
+		.limit(10);
+
+	return rows;
 };
