@@ -14,6 +14,23 @@ type UseEditExpenseFormParams = {
 	liff: typeof liff;
 };
 
+type UseEditExpenseFormResult = {
+	isPending: boolean;
+	payerUserId: string;
+	setPayerUserId: (payerUserId: string) => void;
+	title: string;
+	setTitle: (title: string) => void;
+	amount: string;
+	setAmount: (amount: string) => void;
+	paidAt: string;
+	setPaidAt: (paidAt: string) => void;
+	error: string | null;
+	participantAmounts: Map<string, string>;
+	toggleMember: (lineUserId: string) => void;
+	updateShareAmount: (lineUserId: string, shareAmount: string) => void;
+	handleSubmit: (e: React.FormEvent) => void;
+};
+
 function formatPaidAtForInput(paidAt: string): string {
 	if (/^\d{4}-\d{2}-\d{2}/.test(paidAt)) {
 		return paidAt.slice(0, 10);
@@ -27,7 +44,7 @@ function formatPaidAtForInput(paidAt: string): string {
 export const useEditExpenseForm = ({
 	expense,
 	liff,
-}: UseEditExpenseFormParams) => {
+}: UseEditExpenseFormParams): UseEditExpenseFormResult => {
 	const initialShares = useMemo(
 		() =>
 			new Map(
@@ -40,7 +57,9 @@ export const useEditExpenseForm = ({
 	const [payerUserId, setPayerUserId] = useState(expense.payerUserId);
 	const [title, setTitle] = useState(expense.title);
 	const [amount, setAmount] = useState(expense.amount);
-	const [paidAt, setPaidAt] = useState(() => formatPaidAtForInput(expense.paidAt));
+	const [paidAt, setPaidAt] = useState(() =>
+		formatPaidAtForInput(expense.paidAt),
+	);
 	const [error, setError] = useState<string | null>(null);
 
 	const { participantAmounts, toggleMember, updateShareAmount } =

@@ -13,7 +13,7 @@ function buildExpenseEditLiffUri(
 		groupId: lineGroupId,
 		expenseId: String(expenseId),
 	});
-	return `https://liff.line.me/${liffId}/liff/expense/edit?${q.toString()}`;
+	return `https://liff.line.me/${liffId}/liff/edit?${q.toString()}`;
 }
 
 function buildExpenseDeleteLiffUri(
@@ -25,7 +25,7 @@ function buildExpenseDeleteLiffUri(
 		groupId: lineGroupId,
 		expenseId: String(expenseId),
 	});
-	return `https://liff.line.me/${liffId}/liff/expense/delete?${q.toString()}`;
+	return `https://liff.line.me/${liffId}/liff/delete?${q.toString()}`;
 }
 
 /**

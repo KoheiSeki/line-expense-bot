@@ -10,7 +10,7 @@ const sampleItems = [
 		payerUserName: "太郎",
 		title: "ランチ",
 		amount: 1200,
-		paidAt: new Date("2026-01-15T12:00:00"),
+		paidAt: "2026-01-15",
 		createdAt: new Date("2026-01-15T12:00:00.000Z"),
 	},
 ];
@@ -62,8 +62,8 @@ describe("buildExpenseListFlexMessage", () => {
 		expect(fullJson).toContain('"label":"編集"');
 		expect(fullJson).toContain('"label":"削除"');
 		expect(fullJson).toContain("liff.line.me/0000000000-testLiffId");
-		expect(fullJson).toContain("/liff/expense/edit?");
-		expect(fullJson).toContain("/liff/expense/delete?");
+		expect(fullJson).toContain("/liff/edit?");
+		expect(fullJson).toContain("/liff/delete?");
 		expect(fullJson).toContain(encodeURIComponent(sampleGroupId));
 		expect(fullJson).toContain("expenseId=1");
 	});
