@@ -16,28 +16,43 @@ export const buildSettlementFlexMessage = (
 		} satisfies messagingApi.TextMessage;
 	}
 
-	const rows = settlements.map((settlement) => ({
-		type: "box",
-		layout: "horizontal",
-		contents: [
-			{
-				type: "text",
-				text: `${settlement.fromUserName} → ${settlement.toUserName}`,
-				flex: 3,
-				size: "sm",
-				color: "#333333",
-			},
-			{
-				type: "text",
-				text: `¥${settlement.amount.toLocaleString("ja-JP")}`,
-				flex: 1,
-				size: "sm",
-				color: "#111111",
-				weight: "bold",
-				align: "end",
-			},
-		],
-	}));
+	const rows = settlements.map((settlement) => {
+		const isSettled = settlement.amount <= 0;
+		const amountOrStatusText = isSettled
+			? {
+					type: "text" as const,
+					text: "精算完了",
+					flex: 1,
+					size: "sm" as const,
+					color: "#0B6E4F",
+					weight: "bold" as const,
+					align: "end" as const,
+				}
+			: {
+					type: "text" as const,
+					text: `¥${settlement.amount.toLocaleString("ja-JP")}`,
+					flex: 1,
+					size: "sm" as const,
+					color: "#111111",
+					weight: "bold" as const,
+					align: "end" as const,
+				};
+
+		return {
+			type: "box" as const,
+			layout: "horizontal" as const,
+			contents: [
+				{
+					type: "text" as const,
+					text: `${settlement.fromUserName} → ${settlement.toUserName}`,
+					flex: 3,
+					size: "sm" as const,
+					color: "#333333",
+				},
+				amountOrStatusText,
+			],
+		};
+	});
 
 	return {
 		type: "flex",

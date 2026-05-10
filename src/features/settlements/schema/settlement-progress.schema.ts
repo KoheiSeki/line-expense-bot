@@ -1,7 +1,6 @@
 import { z } from "zod";
 
-/** 残高取得スキーマ定義 */
-export const fetchSettlementsSchema = z.object({
+export const fetchSettlementProgressSchema = z.object({
 	lineGroupId: z
 		.string()
 		.min(1, "グループIDの取得に失敗しました")

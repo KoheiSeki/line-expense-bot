@@ -1,0 +1,52 @@
+import {
+	completeAllUserSettlement,
+	completeUserSettlement,
+} from "@/features/settlements/service/settlements-progress.server.service";
+import { lineClient } from "@/lib/line/client";
+import { messagingApi } from "@line/bot-sdk";
+
+/**
+ * 精算を完了するハンドラー
+ * @param replyToken リプライトークン
+ * @param groupId グループID
+ * @param userId ユーザーID
+ */
+export async function handleCompleteSettlement(
+	replyToken: string,
+	groupId: string,
+	userId: string,
+) {
+	await completeUserSettlement(userId, groupId);
+
+	await lineClient.replyMessage({
+		replyToken,
+		messages: [
+			{
+				type: "text",
+				text: "精算を完了しました",
+			} satisfies messagingApi.TextMessage,
+		],
+	});
+}
+
+/**
+ * 全員の精算を完了するハンドラー
+ * @param replyToken リプライトークン
+ * @param groupId グループID
+ */
+export async function handleCompleteAllSettlements(
+	replyToken: string,
+	groupId: string,
+) {
+	await completeAllUserSettlement(groupId);
+
+	await lineClient.replyMessage({
+		replyToken,
+		messages: [
+			{
+				type: "text",
+				text: "全員の精算を完了しました",
+			} satisfies messagingApi.TextMessage,
+		],
+	});
+}
