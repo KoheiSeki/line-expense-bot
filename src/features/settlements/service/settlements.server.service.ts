@@ -10,6 +10,7 @@ import { sql } from "drizzle-orm";
 import { calculateSettlements } from "../utils/settlements.utils";
 import { fetchGroupMembers } from "@/features/group-members/service/group-members.server.service";
 import { fetchSettlementProgress } from "./settlements-progress.server.service";
+import { GroupSettlementProgress } from "../types/settlement-progress.types";
 
 /**
  * 残高を取得する関数
@@ -25,8 +26,11 @@ export const fetchSettlements = async (
 	// 精算管理テーブルのデータ取得
 	const settlementProgress = await fetchSettlementProgress(lineGroupId);
 
+	// 精算内容と精算管理テーブルの内容を突き合わせ
+	const mergedSettlements = mergeSettlements(settlements, settlementProgress);
+
 	// 表示用データ取得
-	const results = await buildSettlementResults(lineGroupId, settlements);
+	const results = await buildSettlementResults(lineGroupId, mergedSettlements);
 
 	return results;
 };
@@ -115,4 +119,29 @@ const buildSettlementResults = async (
 	});
 
 	return results;
+};
+
+/**
+ * 精算内容と精算管理テーブルの内容を突き合わせる関数
+ * @param settlements 精算内容
+ * @param settlementProgress 精算管理テーブルの内容
+ * @returns 突き合わせた精算内容
+ */
+const mergeSettlements = (
+	settlements: Settlement[],
+	settlementProgress: GroupSettlementProgress[],
+): Settlement[] => {
+	return settlements.map((settlement) => {
+		const progress = settlementProgress.find(
+			(progress) =>
+				progress.fromUserId === settlement.fromUserId &&
+				progress.toUserId === settlement.toUserId,
+		);
+
+		return {
+			fromUserId: settlement.fromUserId,
+			toUserId: settlement.toUserId,
+			amount: Math.max(settlement.amount - (progress?.settledAmount ?? 0), 0),
+		};
+	});
 };
