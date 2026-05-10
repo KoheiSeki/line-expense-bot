@@ -2,8 +2,10 @@ import { db, DbTransaction } from "@/lib/db/client";
 import { fetchGreedySettlements } from "./settlements.server.service";
 import { ApiError } from "@/lib/api/error";
 import { groupSettlementProgress } from "@/lib/db/schema";
-import { sql } from "drizzle-orm";
+import { sql, eq } from "drizzle-orm";
 import { Settlement } from "../types/settlements.types";
+import { fetchSettlementProgressSchema } from "../schema/settlement-progress.schema";
+import { GroupSettlementProgress } from "../types/settlement-progress.types";
 
 /**
  * 精算を完了する関数
@@ -38,6 +40,30 @@ export const completeAllUserSettlement = async (
 		await upsertSettlementProgress(settlements, lineGroupId, tx);
 	});
 };
+
+/**
+ * グループ精算管理テーブルのデータを取得する関数
+ * @param lineGroupId ライングループID
+ * @param tx トランザクション
+ * @returns グループ精算管理テーブルの行データ
+ */
+export const fetchSettlementProgress = async (
+	lineGroupId: string,
+	tx?: DbTransaction,
+): Promise<GroupSettlementProgress[]> => {
+	const result = fetchSettlementProgressSchema.safeParse({ lineGroupId });
+	if (!result.success) {
+		throw new ApiError(400, result.error.issues[0].message);
+	}
+
+	const rows = await (tx ?? db)
+		.select()
+		.from(groupSettlementProgress)
+		.where(eq(groupSettlementProgress.lineGroupId, lineGroupId));
+
+	return rows;
+};
+
 /**
  * 該当ユーザーの精算内容を取得する関数
  * @param lineUserId ラインユーザーID

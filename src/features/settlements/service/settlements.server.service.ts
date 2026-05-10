@@ -9,6 +9,7 @@ import { db, DbTransaction } from "@/lib/db/client";
 import { sql } from "drizzle-orm";
 import { calculateSettlements } from "../utils/settlements.utils";
 import { fetchGroupMembers } from "@/features/group-members/service/group-members.server.service";
+import { fetchSettlementProgress } from "./settlements-progress.server.service";
 
 /**
  * 残高を取得する関数
@@ -20,6 +21,9 @@ export const fetchSettlements = async (
 ): Promise<SettlementResult[]> => {
 	// 精算内容取得
 	const settlements = await fetchGreedySettlements(lineGroupId);
+
+	// 精算管理テーブルのデータ取得
+	const settlementProgress = await fetchSettlementProgress(lineGroupId);
 
 	// 表示用データ取得
 	const results = await buildSettlementResults(lineGroupId, settlements);
