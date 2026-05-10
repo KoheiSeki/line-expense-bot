@@ -20,9 +20,16 @@ vi.mock("./settlements-progress.server.service", () => ({
 	fetchSettlementProgress: mockFetchSettlementProgress,
 }));
 
-vi.mock("@/features/group-members/service/group-members.server.service", () => ({
-	fetchGroupMembers: mockFetchGroupMembers,
-}));
+vi.mock("@/features/group-members/service/group-members.server.service", async (importOriginal) => {
+	const actual =
+		await importOriginal<
+			typeof import("@/features/group-members/service/group-members.server.service")
+		>();
+	return {
+		...actual,
+		fetchGroupMembers: mockFetchGroupMembers,
+	};
+});
 
 const validGroupId = "testGroupId";
 

@@ -5,6 +5,7 @@ export type ExpenseListResult = {
 	payerUserName: string;
 	title: string;
 	amount: number;
-	paidAt: string;
+	/** 支払日（表示は `formatDateJp` で整形） */
+	paidAt: Date;
 	createdAt: Date;
 };
