@@ -4,10 +4,36 @@ import { messagingApi } from "@line/bot-sdk";
 
 const LIST_LIMIT = 10;
 
+function buildExpenseEditLiffUri(
+	lineGroupId: string,
+	expenseId: number,
+): string {
+	const liffId = process.env.NEXT_PUBLIC_LIFF_ID ?? "";
+	const q = new URLSearchParams({
+		groupId: lineGroupId,
+		expenseId: String(expenseId),
+	});
+	return `https://liff.line.me/${liffId}/liff/expense/edit?${q.toString()}`;
+}
+
+function buildExpenseDeleteLiffUri(
+	lineGroupId: string,
+	expenseId: number,
+): string {
+	const liffId = process.env.NEXT_PUBLIC_LIFF_ID ?? "";
+	const q = new URLSearchParams({
+		groupId: lineGroupId,
+		expenseId: String(expenseId),
+	});
+	return `https://liff.line.me/${liffId}/liff/expense/delete?${q.toString()}`;
+}
+
 /**
  * 支出一覧の Flex メッセージを作成する関数（直近 {LIST_LIMIT} 件想定）
+ * @param lineGroupId 一覧を表示しているライングループ ID（LIFF のクエリに使用）
  */
 export const buildExpenseListFlexMessage = (
+	lineGroupId: string,
 	items: ExpenseListResult[],
 ): messagingApi.FlexMessage | messagingApi.TextMessage => {
 	if (items.length === 0) {
@@ -52,6 +78,34 @@ export const buildExpenseListFlexMessage = (
 				text: `${item.payerUserName} · 支払日 ${formatDateJp(item.paidAt)}`,
 				size: "xs" as const,
 				color: "#888888",
+			},
+			{
+				type: "box" as const,
+				layout: "horizontal" as const,
+				spacing: "md" as const,
+				margin: "sm" as const,
+				contents: [
+					{
+						type: "button" as const,
+						style: "link" as const,
+						height: "sm" as const,
+						action: {
+							type: "uri" as const,
+							label: "編集",
+							uri: buildExpenseEditLiffUri(lineGroupId, item.expenseId),
+						},
+					},
+					{
+						type: "button" as const,
+						style: "link" as const,
+						height: "sm" as const,
+						action: {
+							type: "uri" as const,
+							label: "削除",
+							uri: buildExpenseDeleteLiffUri(lineGroupId, item.expenseId),
+						},
+					},
+				],
 			},
 		],
 	}));

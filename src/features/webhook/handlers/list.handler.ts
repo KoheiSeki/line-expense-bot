@@ -10,7 +10,7 @@ import { lineClient } from "@/lib/line/client";
 export async function handleList(replyToken: string, groupId: string) {
 	const items = await fetchExpenseList(groupId);
 
-	const message = buildExpenseListFlexMessage(items);
+	const message = buildExpenseListFlexMessage(groupId, items);
 
 	await lineClient.replyMessage({
 		replyToken,

@@ -55,10 +55,11 @@ describe("handleList", () => {
 		expect(mockFetchExpenseList).toHaveBeenCalledExactlyOnceWith("Cgroupxxxxxxxx");
 	});
 
-	it("buildExpenseListFlexMessageに取得結果を渡す", async () => {
+	it("buildExpenseListFlexMessageにgroupIdと取得結果を渡す", async () => {
 		await handleList("reply-token", "Cgroupxxxxxxxx");
 
 		expect(mockBuildExpenseListFlexMessage).toHaveBeenCalledExactlyOnceWith(
+			"Cgroupxxxxxxxx",
 			sampleItems,
 		);
 	});
