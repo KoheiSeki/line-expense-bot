@@ -1,0 +1,32 @@
+import { EditExpenseForm } from "@/features/expenses/components/edit-expense-form";
+import { fetchEditExpense } from "@/features/expenses/service/expense.server.service";
+import { EditExpense } from "@/features/expenses/types/edit-expense.types";
+import { Member } from "@/features/expenses/types/expense.types";
+import { fetchGroupMembers } from "@/features/group-members/service/group-members.server.service";
+
+type EditPageProps = {
+	searchParams: Promise<{ groupId?: string; expenseId?: string }>;
+};
+
+export default async function EditPage({ searchParams }: EditPageProps) {
+	const { groupId, expenseId } = await searchParams;
+	if (!groupId) return <p>グループIDが取得できません</p>;
+	if (!expenseId) return <p>支出IDが取得できません</p>;
+
+	const parsedExpenseId = Number.parseInt(expenseId, 10);
+	if (!Number.isFinite(parsedExpenseId)) {
+		return <p>支出IDの形式が不正です</p>;
+	}
+
+	const [expense, members]: [EditExpense, Member[]] = await Promise.all([
+		fetchEditExpense(parsedExpenseId, groupId),
+		fetchGroupMembers(groupId),
+	]);
+
+	return (
+		<main className="max-w-md mx-auto">
+			<h1 className="text-xl font-bold p-6 pb-0">支出編集</h1>
+			<EditExpenseForm expense={expense} members={members} />
+		</main>
+	);
+}
