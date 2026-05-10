@@ -1,9 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ApiError } from "@/lib/api/error";
+import { DbTransaction } from "@/lib/db/client";
 import {
 	completeAllUserSettlement,
 	completeUserSettlement,
+	fetchSettlementProgress,
 } from "./settlements-progress.server.service";
+import { groupSettlementProgress } from "@/lib/db/schema";
 
 const {
 	mockTx,
@@ -12,6 +15,9 @@ const {
 	mockOnConflictDoUpdate,
 	mockTxTransaction,
 	mockFetchGreedySettlements,
+	mockProgressWhere,
+	mockProgressFrom,
+	mockProgressSelect,
 } = vi.hoisted(() => {
 	const mockOnConflictDoUpdate = vi.fn().mockResolvedValue(undefined);
 	const mockValues = vi.fn().mockReturnValue({
@@ -25,6 +31,9 @@ const {
 			await cb(mockTx);
 		});
 	const mockFetchGreedySettlements = vi.fn();
+	const mockProgressWhere = vi.fn().mockResolvedValue([]);
+	const mockProgressFrom = vi.fn().mockReturnValue({ where: mockProgressWhere });
+	const mockProgressSelect = vi.fn().mockReturnValue({ from: mockProgressFrom });
 	return {
 		mockTx,
 		mockInsert,
@@ -32,12 +41,16 @@ const {
 		mockOnConflictDoUpdate,
 		mockTxTransaction,
 		mockFetchGreedySettlements,
+		mockProgressWhere,
+		mockProgressFrom,
+		mockProgressSelect,
 	};
 });
 
 vi.mock("@/lib/db/client", () => ({
 	db: {
 		transaction: mockTxTransaction,
+		select: mockProgressSelect,
 	},
 }));
 
@@ -48,6 +61,69 @@ vi.mock("./settlements.server.service", () => ({
 const lineGroupId = "Cxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx";
 const lineUserId = "Uxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx";
 const otherUserId = "Uyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy";
+
+describe("fetchSettlementProgress", () => {
+	beforeEach(() => {
+		vi.clearAllMocks();
+		mockProgressWhere.mockResolvedValue([]);
+		mockProgressFrom.mockReturnValue({ where: mockProgressWhere });
+		mockProgressSelect.mockReturnValue({ from: mockProgressFrom });
+	});
+
+	it("lineGroupIdが空の場合はApiErrorを投げselectしない", async () => {
+		await expect(fetchSettlementProgress("")).rejects.toMatchObject({
+			status: 400,
+			message: "グループIDの取得に失敗しました",
+		});
+		expect(mockProgressSelect).not.toHaveBeenCalled();
+	});
+
+	it("lineGroupIdが50文字を超える場合はApiErrorを投げselectしない", async () => {
+		await expect(fetchSettlementProgress("a".repeat(51))).rejects.toMatchObject({
+			status: 400,
+			message: "グループIDの形式が不正です",
+		});
+		expect(mockProgressSelect).not.toHaveBeenCalled();
+	});
+
+	it("有効なlineGroupIdでselect→from→whereが1回ずつ呼ばれ行を返す", async () => {
+		const rows = [
+			{
+				lineGroupId,
+				fromUserId: lineUserId,
+				toUserId: otherUserId,
+				settledAmount: 300,
+				updatedAt: new Date("2026-01-01T00:00:00.000Z"),
+			},
+		];
+		mockProgressWhere.mockResolvedValueOnce(rows);
+
+		const result = await fetchSettlementProgress(lineGroupId);
+
+		expect(mockProgressSelect).toHaveBeenCalledOnce();
+		expect(mockProgressFrom).toHaveBeenCalledWith(groupSettlementProgress);
+		expect(mockProgressWhere).toHaveBeenCalledOnce();
+		expect(result).toEqual(rows);
+	});
+
+	it("第2引数txを渡した場合はdb.selectではなくtx.selectが使われる", async () => {
+		const mockTxWhere = vi.fn().mockResolvedValue([]);
+		const mockTxFrom = vi.fn().mockReturnValue({ where: mockTxWhere });
+		const mockTxSelect = vi.fn().mockReturnValue({ from: mockTxFrom });
+		const txWithSelect = {
+			...mockTx,
+			select: mockTxSelect,
+		};
+
+		await fetchSettlementProgress(
+			lineGroupId,
+			txWithSelect as unknown as DbTransaction,
+		);
+
+		expect(mockTxSelect).toHaveBeenCalledOnce();
+		expect(mockProgressSelect).not.toHaveBeenCalled();
+	});
+});
 
 describe("completeUserSettlement", () => {
 	beforeEach(() => {
