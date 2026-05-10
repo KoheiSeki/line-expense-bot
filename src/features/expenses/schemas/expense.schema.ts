@@ -46,3 +46,12 @@ export const createExpenseSchema = expenseFormSchema.and(
 			.max(50, "グループIDの形式が不正です"),
 	}),
 );
+
+/** 支出編集スキーマ定義 */
+export const editExpenseSchema = createExpenseSchema.and(
+	z.object({
+		expenseId: z
+			.number("支出IDの形式が不正です")
+			.min(1, "支出IDの取得に失敗しました"),
+	}),
+);

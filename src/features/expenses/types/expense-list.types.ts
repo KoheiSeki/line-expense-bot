@@ -6,6 +6,6 @@ export type ExpenseListResult = {
 	title: string;
 	amount: number;
 	/** 支払日（表示は `formatDateJp` で整形） */
-	paidAt: Date;
+	paidAt: string;
 	createdAt: Date;
 };

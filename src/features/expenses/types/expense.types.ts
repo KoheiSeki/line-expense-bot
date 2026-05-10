@@ -59,7 +59,7 @@ export type Expense = {
 	/** 金額 */
 	amount: number;
 	/** 支払い日 */
-	paidAt: Date;
+	paidAt: string;
 	/** 作成日時 */
 	createdAt: Date;
 };

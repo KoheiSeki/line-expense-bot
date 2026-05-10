@@ -75,7 +75,7 @@ export const buildExpenseListFlexMessage = (
 			},
 			{
 				type: "text" as const,
-				text: `${item.payerUserName} · 支払日 ${formatDateJp(item.paidAt)}`,
+				text: `${item.payerUserName} · 支払日 ${formatDateJp(new Date(item.paidAt))}`,
 				size: "xs" as const,
 				color: "#888888",
 			},
