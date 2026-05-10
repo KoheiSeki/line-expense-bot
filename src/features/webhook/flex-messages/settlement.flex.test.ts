@@ -80,4 +80,47 @@ describe("buildSettlementFlexMessage", () => {
 		const bodyContents = result.contents.body?.contents ?? [];
 		expect(bodyContents).toHaveLength(2);
 	});
+
+	it("残額が0円の行は精算完了と表示し¥0は出さない", () => {
+		const settledRow = [
+			{
+				fromUserId: "user1",
+				fromUserName: "Alice",
+				toUserId: "user2",
+				toUserName: "Bob",
+				amount: 0,
+			},
+		];
+
+		const result = buildSettlementFlexMessage(settledRow);
+		if (result.type !== "flex") throw new Error("type should be flex");
+		if (result.contents.type !== "bubble")
+			throw new Error("contents should be bubble");
+
+		const rowText = JSON.stringify(result.contents.body?.contents ?? []);
+		expect(rowText).toContain("精算完了");
+		expect(rowText).not.toContain("¥0");
+	});
+
+	it("残額ありと0円が混在する場合、それぞれ金額と精算完了が使い分けられる", () => {
+		const mixed = [
+			...requiredSettlements,
+			{
+				fromUserId: "user2",
+				fromUserName: "Bob",
+				toUserId: "user3",
+				toUserName: "Charlie",
+				amount: 0,
+			},
+		];
+
+		const result = buildSettlementFlexMessage(mixed);
+		if (result.type !== "flex") throw new Error("type should be flex");
+		if (result.contents.type !== "bubble")
+			throw new Error("contents should be bubble");
+
+		const rowText = JSON.stringify(result.contents.body?.contents ?? []);
+		expect(rowText).toContain("¥1,000");
+		expect(rowText).toContain("精算完了");
+	});
 });
