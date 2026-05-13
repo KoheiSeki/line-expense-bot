@@ -1,5 +1,7 @@
+import { deleteExpense } from "@/features/expenses/service/delete-expense.server.service";
 import { editExpense } from "@/features/expenses/service/edit-expense.server.service";
 import { createExpense } from "@/features/expenses/service/expense.server.service";
+import { DeleteExpenseReq } from "@/features/expenses/types/delete-expense.types";
 import { EditExpenseReq } from "@/features/expenses/types/edit-expense.types";
 import { CreateExpenseReq } from "@/features/expenses/types/expense.types";
 import { apiHandler } from "@/lib/api/api-handler";
@@ -36,6 +38,24 @@ export const PUT = apiHandler(
 
 		return NextResponse.json(
 			{ message: "支出を編集しました" },
+			{ status: 200 },
+		);
+	},
+);
+
+/**
+ * 支出を削除するAPI
+ * @param req リクエスト
+ * @returns レスポンス
+ */
+export const DELETE = apiHandler(
+	async (req: NextRequest): Promise<NextResponse> => {
+		const body: DeleteExpenseReq = await req.json();
+
+		await deleteExpense(body);
+
+		return NextResponse.json(
+			{ message: "支出を削除しました" },
 			{ status: 200 },
 		);
 	},
