@@ -6,6 +6,7 @@ LINE グループ向けの割り勘管理 Bot です。LINE Messaging API と LI
 
 - **参加**: グループメンバーとして登録（LIFF 経由）
 - **登録**: 支出を記録（LIFF フォームで入力）
+- **一覧**: 直近の支出一覧を Flex で表示。各行から LIFF（`/liff/edit`・`/liff/delete`）で編集・削除
 - **表示**: 未精算の支出を集計し、最小の送金回数で精算方法を Flex メッセージで表示
 
 精算アルゴリズムには貪欲法を採用しており、送金回数を最小化します。
@@ -25,14 +26,17 @@ LINE グループ向けの割り勘管理 Bot です。LINE Messaging API と LI
 
 ```
 LINE アプリ
-  ├── テキスト送信 (参加 / 登録 / 表示)
+  ├── テキスト送信 (参加 / 登録 / 一覧 / 表示 / ヘルプ)
   │     └── Webhook → /api/line/webhook → 各ハンドラー
   │           ├── 参加  → LIFF URL を返信
   │           ├── 登録  → LIFF URL を返信
+  │           ├── 一覧  → 支出一覧 Flex（編集・削除用 LIFF リンク付き）
   │           └── 表示  → 精算結果を Flex メッセージで返信
   └── LIFF 画面
         ├── /liff/join     → グループ参加フォーム
-        └── /liff/register → 支出登録フォーム → /api/expenses
+        ├── /liff/register → 支出登録フォーム → /api/expenses (POST)
+        ├── /liff/edit     → 支出編集（クエリ: groupId, expenseId）→ /api/expenses (PUT)
+        └── /liff/delete   → 支出削除確認 → /api/expenses (DELETE)
 ```
 
 ## データベース設計
