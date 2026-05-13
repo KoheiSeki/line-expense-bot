@@ -85,13 +85,12 @@ export const fetchExpensesByLineGroupId = async (
 };
 
 /**
- * 編集対象の支出のデータを取得する関数
- * @param expenseId 編集対象の支出ID
+ * 支出の詳細（編集フォーム・削除確認など LIFF 用）を取得する
+ * @param expenseId 支出ID
  * @param lineGroupId ライングループID
  * @param tx トランザクション
- * @returns 編集対象の支出のデータ
  */
-export const fetchEditExpense = async (
+export const fetchExpenseDetail = async (
 	expenseId: number,
 	lineGroupId: string,
 	tx?: DbTransaction,
@@ -119,7 +118,7 @@ export const fetchEditExpense = async (
 	`);
 
 	if (rows.length === 0) {
-		throw new ApiError(404, "編集対象の支出が見つかりません");
+		throw new ApiError(404, "支出が見つかりません");
 	}
 
 	const expenseParticipants: EditExpenseParticipant[] = rows.map((row) => ({

@@ -1,14 +1,12 @@
-import { EditExpenseForm } from "@/features/expenses/components/edit-expense-form";
+import { DeleteExpenseConfirmForm } from "@/features/expenses/components/delete-expense-confirm-form";
 import { fetchExpenseDetail } from "@/features/expenses/service/expense.server.service";
 import { EditExpense } from "@/features/expenses/types/edit-expense.types";
-import { Member } from "@/features/expenses/types/expense.types";
-import { fetchGroupMembers } from "@/features/group-members/service/group-members.server.service";
 
-type EditPageProps = {
+type DeletePageProps = {
 	searchParams: Promise<{ groupId?: string; expenseId?: string }>;
 };
 
-export default async function EditPage({ searchParams }: EditPageProps) {
+export default async function DeletePage({ searchParams }: DeletePageProps) {
 	const { groupId, expenseId } = await searchParams;
 	if (!groupId) return <p>グループIDが取得できません</p>;
 	if (!expenseId) return <p>支出IDが取得できません</p>;
@@ -18,15 +16,12 @@ export default async function EditPage({ searchParams }: EditPageProps) {
 		return <p>支出IDの形式が不正です</p>;
 	}
 
-	const [expense, members]: [EditExpense, Member[]] = await Promise.all([
-		fetchExpenseDetail(parsedExpenseId, groupId),
-		fetchGroupMembers(groupId),
-	]);
+	const expense: EditExpense = await fetchExpenseDetail(parsedExpenseId, groupId);
 
 	return (
 		<main className="max-w-md mx-auto">
-			<h1 className="text-xl font-bold p-6 pb-0">支出編集</h1>
-			<EditExpenseForm expense={expense} members={members} />
+			<h1 className="text-xl font-bold p-6 pb-0">支出削除</h1>
+			<DeleteExpenseConfirmForm expense={expense} />
 		</main>
 	);
 }

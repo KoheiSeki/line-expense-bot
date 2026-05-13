@@ -46,7 +46,7 @@ export type EditExpenseSearchResult = {
 	shareAmount: number;
 };
 
-/** 編集対象の支出のフォーム */
+/** LIFF 編集フォーム・削除確認などで使う支出の表示用データ */
 export type EditExpense = {
 	/** 支出ID */
 	expenseId: number;

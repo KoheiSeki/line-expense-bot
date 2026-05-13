@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { fetchEditExpense } from "./expense.server.service";
+import { fetchExpenseDetail } from "./expense.server.service";
 
 const { mockExecute } = vi.hoisted(() => ({
 	mockExecute: vi.fn(),
@@ -13,7 +13,7 @@ vi.mock("@/lib/db/client", () => ({
 
 const groupId = "Cxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx";
 
-describe("fetchEditExpense", () => {
+describe("fetchExpenseDetail", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
 	});
@@ -46,7 +46,7 @@ describe("fetchEditExpense", () => {
 			},
 		]);
 
-		const result = await fetchEditExpense(1, groupId);
+		const result = await fetchExpenseDetail(1, groupId);
 
 		expect(result.expenseId).toBe(1);
 		expect(result.lineGroupId).toBe(groupId);
@@ -69,9 +69,9 @@ describe("fetchEditExpense", () => {
 
 	it("結果が0行のとき404のApiErrorを投げる", async () => {
 		mockExecute.mockResolvedValue([]);
-		await expect(fetchEditExpense(999, groupId)).rejects.toMatchObject({
+		await expect(fetchExpenseDetail(999, groupId)).rejects.toMatchObject({
 			status: 404,
-			message: "編集対象の支出が見つかりません",
+			message: "支出が見つかりません",
 		});
 	});
 });
