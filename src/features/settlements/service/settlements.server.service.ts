@@ -8,7 +8,10 @@ import {
 import { db, DbTransaction } from "@/lib/db/client";
 import { sql } from "drizzle-orm";
 import { calculateSettlements } from "../utils/settlements.utils";
-import { fetchGroupMembers } from "@/features/group-members/service/group-members.server.service";
+import {
+	buildGroupMemberMap,
+	fetchGroupMembers,
+} from "@/features/group-members/service/group-members.server.service";
 import { fetchSettlementProgress } from "./settlements-progress.server.service";
 import { GroupSettlementProgress } from "../types/settlement-progress.types";
 
@@ -104,9 +107,7 @@ const buildSettlementResults = async (
 ): Promise<SettlementResult[]> => {
 	const groupMembers = await fetchGroupMembers(lineGroupId);
 
-	const groupMemberMap: Record<string, string> = Object.fromEntries(
-		groupMembers.map((member) => [member.lineUserId, member.displayName]),
-	);
+	const groupMemberMap = buildGroupMemberMap(groupMembers);
 
 	const results: SettlementResult[] = settlements.map((settlement) => {
 		return {

@@ -12,6 +12,7 @@ import {
 	handleCompleteSettlement,
 } from "./settlement-complete.handler";
 import { GroupTextContext } from "../types/webhook.types";
+import { handleList } from "./list.handler";
 
 /**
  * メッセージイベントを処理するハンドラー
@@ -33,6 +34,9 @@ export async function handleMessage(event: webhook.MessageEvent) {
 				break;
 			case "表示":
 				await handleDisplay(replyToken, groupId);
+				break;
+			case "一覧":
+				await handleList(replyToken, groupId);
 				break;
 			case "完了":
 				await handleClose(replyToken, groupId);
