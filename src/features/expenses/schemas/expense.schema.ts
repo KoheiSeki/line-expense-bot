@@ -55,3 +55,14 @@ export const editExpenseSchema = createExpenseSchema.and(
 			.min(1, "支出IDの取得に失敗しました"),
 	}),
 );
+
+/** 支出削除スキーマ定義 */
+export const deleteExpenseSchema = z.object({
+	expenseId: z
+		.number("支出IDの形式が不正です")
+		.min(1, "支出IDの取得に失敗しました"),
+	lineGroupId: z
+		.string()
+		.min(1, "グループIDの取得に失敗しました")
+		.max(50, "グループIDの形式が不正です"),
+});

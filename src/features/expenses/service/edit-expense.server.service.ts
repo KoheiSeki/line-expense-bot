@@ -27,7 +27,7 @@ export const editExpense = async (request: EditExpenseReq): Promise<void> => {
 		}
 
 		/** 支出テーブルを更新 */
-		const updateCount = await tx
+		const updateExpenseResult = await tx
 			.update(expenses)
 			.set({
 				payerUserId: request.payerUserId,
@@ -42,20 +42,20 @@ export const editExpense = async (request: EditExpenseReq): Promise<void> => {
 				),
 			)
 			.returning({ expenseId: expenses.expenseId });
-		if (updateCount.length === 0) {
+		if (updateExpenseResult.length === 0) {
 			throw new ApiError(404, "支出の編集に失敗しました");
 		}
 
 		/** 支出参加者テーブルを更新 */
-		const deleteCount = await tx
+		const deleteExpenseParticipantResult = await tx
 			.delete(expenseParticipants)
 			.where(eq(expenseParticipants.expenseId, request.expenseId))
 			.returning({ lineUserId: expenseParticipants.lineUserId });
-		if (deleteCount.length === 0) {
+		if (deleteExpenseParticipantResult.length === 0) {
 			throw new ApiError(404, "支出参加者が見つかりません");
 		}
 		/** 支出参加者テーブルを追加 */
-		const insertCount = await tx
+		const insertExpenseParticipantResult = await tx
 			.insert(expenseParticipants)
 			.values(
 				request.expenseParticipants.map((participant) => ({
@@ -65,7 +65,7 @@ export const editExpense = async (request: EditExpenseReq): Promise<void> => {
 				})),
 			)
 			.returning({ lineUserId: expenseParticipants.lineUserId });
-		if (insertCount.length === 0) {
+		if (insertExpenseParticipantResult.length === 0) {
 			throw new ApiError(500, "支出参加者の追加に失敗しました");
 		}
 	});
