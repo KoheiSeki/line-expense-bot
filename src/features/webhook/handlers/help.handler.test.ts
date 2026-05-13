@@ -34,4 +34,13 @@ describe("helpHandler", () => {
 		const messages = mockReplyMessage.mock.calls[0][0].messages;
 		expect(messages[0].text).toBe(HELP_MESSAGE);
 	});
+
+	it("一覧・締めの案内を含む", async () => {
+		await handleHelp("token");
+		const text = mockReplyMessage.mock.calls[0][0].messages[0].text;
+		expect(text).toContain("一覧");
+		expect(text).toContain("締め済み");
+		expect(text).toContain("編集");
+		expect(text).toContain("削除");
+	});
 });
