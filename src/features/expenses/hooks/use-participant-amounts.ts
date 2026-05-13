@@ -4,6 +4,8 @@ import { useState } from "react";
 
 type UseParticipantAmountsParams = {
 	amount: string;
+	/** 編集フォームなど、参加者の初期選択・負担額 */
+	initialShares?: Map<string, string>;
 };
 
 type UseParticipantAmountsResult = {
@@ -14,10 +16,11 @@ type UseParticipantAmountsResult = {
 
 export const useParticipantAmounts = ({
 	amount,
+	initialShares,
 }: UseParticipantAmountsParams): UseParticipantAmountsResult => {
 	const [participantAmounts, setParticipantAmounts] = useState<
 		Map<string, string>
-	>(new Map());
+	>(() => (initialShares ? new Map(initialShares) : new Map()));
 
 	/** 参加者の選択状態をトグルする */
 	const toggleMember = (lineUserId: string) => {
