@@ -43,4 +43,21 @@ describe("helpHandler", () => {
 		expect(text).toContain("編集");
 		expect(text).toContain("削除");
 	});
+
+	it("締め・精算コマンドの案内を含む", async () => {
+		await handleHelp("token");
+		const text = mockReplyMessage.mock.calls[0][0].messages[0].text;
+		expect(text).toContain("支出の追加を締め切る");
+		expect(text).toContain("締め解除");
+		expect(text).toContain("自分の精算を完了として記録");
+		expect(text).toContain("全員精算完了");
+	});
+
+	it("自動の精算リマインド案内を含む", async () => {
+		await handleHelp("token");
+		const text = mockReplyMessage.mock.calls[0][0].messages[0].text;
+		expect(text).toContain("自動");
+		expect(text).toContain("送金");
+		expect(text).toContain("1日1回");
+	});
 });
