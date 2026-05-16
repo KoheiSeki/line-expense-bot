@@ -1,10 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { sendSettlementsRemind } from "./settlements-remind.server.service";
 
-const { mockFetchSettlements, mockOrderBy } = vi.hoisted(() => ({
-	mockFetchSettlements: vi.fn(),
-	mockOrderBy: vi.fn(),
-}));
+const { mockFetchSettlements, mockOrderBy, mockPushMessage } = vi.hoisted(
+	() => ({
+		mockFetchSettlements: vi.fn(),
+		mockOrderBy: vi.fn(),
+		mockPushMessage: vi.fn().mockResolvedValue(undefined),
+	}),
+);
 
 vi.mock("@/lib/db/client", () => ({
 	db: {
@@ -22,6 +25,12 @@ vi.mock("./settlements.server.service", () => ({
 	fetchSettlements: mockFetchSettlements,
 }));
 
+vi.mock("@/lib/line/client", () => ({
+	lineClient: {
+		pushMessage: mockPushMessage,
+	},
+}));
+
 vi.mock("../consts/settlement-remind.consts", async (importOriginal) => {
 	const actual =
 		await importOriginal<
@@ -37,6 +46,8 @@ describe("sendSettlementsRemind", () => {
 	beforeEach(() => {
 		mockFetchSettlements.mockReset();
 		mockOrderBy.mockReset();
+		mockPushMessage.mockReset();
+		mockPushMessage.mockResolvedValue(undefined);
 	});
 
 	it("締め済みグループが無いときは fetchSettlements を呼ばない", async () => {

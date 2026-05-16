@@ -4,6 +4,7 @@ import { asc, isNotNull } from "drizzle-orm";
 import { fetchSettlements } from "./settlements.server.service";
 import { buildSettlementRemindMessage } from "../utils/settlements-remind.utils";
 import { MAX_LINE_GROUP_PER_REMIND_RUN } from "../consts/settlement-remind.consts";
+import { lineClient } from "@/lib/line/client";
 
 /**
  * 精算リマインドメッセージを送信する関数
@@ -25,8 +26,7 @@ export const sendSettlementsRemind = async (): Promise<void> => {
 		const remindText = buildSettlementRemindMessage(settlements);
 		if (remindText == null) continue;
 
-		// Step 5: lineClient.pushMessage({ to: lineGroupId, messages: [{ type: "text", text: remindText }] })
-		void remindText;
+		await sendRemindMessage(lineGroupId, remindText);
 
 		messageCount++;
 		if (messageCount >= MAX_LINE_GROUP_PER_REMIND_RUN) break;
@@ -46,4 +46,19 @@ const fetchClosedGroups = async (tx?: DbTransaction): Promise<string[]> => {
 		.orderBy(asc(groupExpenseManagement.lineGroupId));
 
 	return rows.map((row) => row.lineGroupId);
+};
+
+/**
+ * 精算リマインドメッセージを送信する関数
+ * @param lineGroupId ライングループID
+ * @param remindText 精算リマインドメッセージ
+ */
+const sendRemindMessage = async (
+	lineGroupId: string,
+	remindText: string,
+): Promise<void> => {
+	await lineClient.pushMessage({
+		to: lineGroupId,
+		messages: [{ type: "text", text: remindText }],
+	});
 };
