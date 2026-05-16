@@ -8,6 +8,7 @@ LINE グループ向けの割り勘管理 Bot です。LINE Messaging API と LI
 - **登録**: 支出を記録（LIFF フォームで入力）
 - **一覧**: 直近の支出一覧を Flex で表示。各行から LIFF（`/liff/edit`・`/liff/delete`）で編集・削除
 - **表示**: 未精算の支出を集計し、最小の送金回数で精算方法を Flex メッセージで表示
+- **精算リマインド（自動）**: グループが **締め済み**かつ **未精算の送金がある**とき、Vercel Cron からテキストで通知（詳細は `docs/v1.3-prepare.md` §2.1）
 
 精算アルゴリズムには貪欲法を採用しており、送金回数を最小化します。
 
@@ -101,10 +102,31 @@ CRON_SECRET=
 本番および Preview にデプロイするときは、**Vercel ダッシュボード**の該当プロジェクトで  
 **Settings → Environment Variables** に、ローカルの `.env.local` と **同じ変数名**で値を登録します。
 
-- **Production / Preview / Development** のどの環境に載せるかは変数ごとに選択する（例: `CRON_SECRET` は Preview では別値にする、など）。
+- **Production / Preview / Development** のどの環境に載せるかは変数ごとに選択する（例: `CRON_SECRET` は Preview では **別値**にする、または **未設定のまま**にして Cron を 401 で止める、など）。
 - **秘密値は Git に含めない**。チーム共有は Vercel の権限管理とドキュメント上の変数名のみに留める。
 
-精算リマインド Cron を手動で試す場合（デプロイ済み URL があるとき）の例:
+##### 精算リマインド Cron（`vercel.json`）
+
+リポジトリルートの **`vercel.json`** で、Vercel が **`GET /api/cron/settlement-remind`** を定期実行します。
+
+| 項目 | 内容 |
+|------|------|
+| **パス** | `/api/cron/settlement-remind`（コード上の `SETTLEMENT_REMIND_CRON_PATH` と一致） |
+| **スケジュール** | **`0 10 * * *`**（**UTC** 毎日 10:00 ＝ **日本時間 19:00** 前後。理由は `docs/v1.3-step0-implementation.md` §2.1） |
+| **認証** | リクエストの **`Authorization: Bearer <CRON_SECRET>`** を Route が検証。**Vercel の Environment Variables に `CRON_SECRET` を登録**する（本番 Production は必須）。 |
+
+**デプロイ後の確認**（`<your-deployment>` を実際のデプロイ URL のオリジンに置き換える）:
+
+1. **Bearer なし**または **誤ったトークン** → **401** であること。
+2. **正しい `CRON_SECRET`** を付けた `GET` → **200** であること（レスポンス本文に秘密を含めないこと）。
+
+ローカル（`npm run dev` 中、`CRON_SECRET` を `.env.local` に入れた状態）の例:
+
+```bash
+curl -sS -H "Authorization: Bearer $CRON_SECRET" "http://localhost:3000/api/cron/settlement-remind"
+```
+
+本番・Preview のデプロイ URL向けの例:
 
 ```bash
 curl -sS -H "Authorization: Bearer $CRON_SECRET" "https://<your-deployment>/api/cron/settlement-remind"
