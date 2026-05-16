@@ -132,6 +132,8 @@ curl -sS -H "Authorization: Bearer $CRON_SECRET" "http://localhost:3000/api/cron
 curl -sS -H "Authorization: Bearer $CRON_SECRET" "https://<your-deployment>/api/cron/settlement-remind"
 ```
 
+**メモ**: Vercel では **`http://` だと 308 で `https://` へリダイレクト**されるため、手動確認は **`https://` の URL** を使う。**v1.3 の運用確認記録**（単体テスト・401 確認・実送信目視の有無）は `docs/v1.3-step8-implementation.md` **§5.1** にまとめている。
+
 ### インストールと起動
 
 ```bash
