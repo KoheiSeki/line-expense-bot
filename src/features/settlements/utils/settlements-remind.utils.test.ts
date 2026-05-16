@@ -6,7 +6,7 @@ import {
 	REMIND_MESSAGE_HEADER,
 } from "../consts/settlement-remind.consts";
 import { SettlementResult } from "../types/settlements.types";
-import { buildSettlementRemindMessage } from "./settlement-remind.utils";
+import { buildSettlementRemindMessage } from "./settlements-remind.utils";
 
 const base = (overrides: Partial<SettlementResult>): SettlementResult => ({
 	fromUserId: "u1",
